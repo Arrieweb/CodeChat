@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>iDirect Chat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #050508;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    /* Ambient Apple Glow / Mesh Background Orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(85px);
+      z-index: 0;
+      opacity: 0.65;
+      animation: floatOrb 12s infinite alternate ease-in-out;
+      pointer-events: none;
+    }
+
+    .orb-1 {
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, #7a22ff, #0051ff);
+      top: 5%;
+      left: 10%;
+    }
+
+    .orb-2 {
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, #ff2a7a, #9900ff);
+      bottom: 8%;
+      right: 10%;
+      animation-delay: -5s;
+    }
+
+    .orb-3 {
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, #00d2ff, #0051ff);
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.35;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-35px) scale(1.1); }
+    }
+
+    /* Mobile Container Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: rgba(18, 18, 26, 0.45);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    @media (min-width: 480px) and (min-height: 700px) {
+      .mobile-frame {
+        height: 88vh;
+        border-radius: 44px;
+        box-shadow: 0 28px 60px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      }
+    }
+
+    /* Screen Management */
+    .screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Apple Glass Morphism Standard Card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      border-radius: 28px;
+    }
+
+    /* Rounded Apple Buttons */
+    .btn {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 13px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 24px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+      opacity: 0.85;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #007aff, #5856d6);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 10px 25px rgba(0, 122, 255, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Glass Morphism Input Fields */
+    input {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px;
+      padding: 13px 18px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      transition: border 0.25s, box-shadow 0.25s;
+    }
+
+    input:focus {
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Auth Screen */
+    .auth-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 28px;
+      gap: 18px;
+    }
+
+    .auth-card {
+      padding: 30px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .auth-header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      background: linear-gradient(135deg, #ffffff 40%, rgba(255,255,255,0.45));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 6px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 9px 0;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      border-radius: 18px;
+      transition: all 0.25s;
+    }
+
+    .auth-tab.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+    }
+
+    /* Header Nav Bars */
+    .glass-nav {
+      padding: 18px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+    }
+
+    .glass-nav h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.3);
+      position: relative;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .notification-dot {
+      width: 9px;
+      height: 9px;
+      background-color: #ff3b30;
+      border-radius: 50%;
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      border: 2px solid #14141d;
+      display: none;
+    }
+
+    /* List & Contact Items */
+    .section-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .list-item:active {
+      transform: scale(0.97);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff2a7a, #7a22ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-right: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(122, 34, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .item-meta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-meta .title {
+      font-size: 0.98rem;
+      font-weight: 600;
+    }
+
+    .item-meta .subtitle {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 2px;
+    }
+
+    /* Instagram Glass Bubbles */
+    .chat-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bubble {
+      max-width: 74%;
+      padding: 12px 18px;
+      font-size: 0.94rem;
+      line-height: 1.4;
+      word-break: break-word;
+      animation: applePop 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+    }
+
+    @keyframes applePop {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Outgoing Instagram Glass Gradient */
+    .bubble.outgoing {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(123, 63, 228, 0.88), rgba(217, 46, 127, 0.88));
+      color: #fff;
+      border-radius: 26px 26px 6px 26px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 24px rgba(123, 63, 228, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Incoming Frosted Glass */
+    .bubble.incoming {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f1f1f1;
+      border-radius: 26px 26px 26px 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .bubble-time {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 4px;
+      display: block;
+      text-align: right;
+    }
+
+    /* Glass Chat Footer Input */
+    .chat-input-bar {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .chat-input-bar input {
+      flex: 1;
+      border-radius: 28px;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #007aff, #5856d6);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      box-shadow: 0 8px 18px rgba(0, 122, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* Glass Dialog Overlays */
+    .dialog-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      z-index: 100;
+    }
+
+    .dialog-card {
+      padding: 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Glow Orbs for Glass Refraction -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="mobile-frame">
+    <!-- SCREEN 1: AUTHENTICATION -->
+    <div id="authScreen" class="screen active">
+      <div class="auth-container">
+        <div class="glass-card auth-card">
+          <div class="auth-header">
+            <h1>Direct</h1>
+            <p style="font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-top: 4px;">Liquid Glass Private Messenger</p>
+          </div>
+
+          <div class="auth-tabs">
+            <div class="auth-tab active" id="loginTabBtn" onclick="toggleAuthTab('login')">Log In</div>
+            <div class="auth-tab" id="signupTabBtn" onclick="toggleAuthTab('signup')">Sign Up</div>
+          </div>
+
+          <input type="text" id="usernameInput" placeholder="Your Name" style="display:none;" />
+          <input type="text" id="usercodeInput" placeholder="Code (e.g. 4-6 digits)" maxlength="8" />
+          <input type="password" id="passwordInput" placeholder="Password" />
+
+          <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuthSubmit()">Log In</button>
+          <div id="authError" style="color: #ff453a; font-size: 0.8rem; text-align: center;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: INBOX -->
+    <div id="inboxScreen" class="screen">
+      <div class="glass-nav">
+        <div>
+          <h2 id="inboxUsernameTitle">Direct</h2>
+          <div style="font-size: 0.76rem; color: rgba(255,255,255,0.5);" id="inboxUserCode">Code: ----</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="icon-btn" onclick="openAddFriendModal()">&#10010;</button>
+          <button class="icon-btn" onclick="openRequestsModal()">
+            &#128276;
+            <div class="notification-dot" id="requestsDot"></div>
+          </button>
+          <button class="icon-btn" onclick="handleLogout()" style="font-size: 1rem;">&#8617;</button>
+        </div>
+      </div>
+
+      <div class="section-list" id="friendsList">
+        <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">
+          No conversations yet.<br>Tap '+' to add friends by secret code.
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: INSTAGRAM DIRECT CHAT -->
+    <div id="chatScreen" class="screen">
+      <div class="glass-nav">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="icon-btn" style="width: 36px; height: 36px;" onclick="backToInbox()">&#10094;</button>
+          <div class="avatar" id="chatPartnerAvatar" style="width: 38px; height: 38px; font-size: 1rem; margin: 0;">?</div>
+          <div>
+            <h3 id="chatPartnerName" style="font-size: 0.96rem; font-weight: 600;">Friend</h3>
+            <div style="font-size: 0.74rem; color: rgba(255,255,255,0.5);" id="chatPartnerCode">Code: ----</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <form class="chat-input-bar" onsubmit="handleSendMessage(event)">
+        <input type="text" id="chatMessageInput" placeholder="Message..." autocomplete="off" />
+        <button type="submit" class="send-btn">&#10148;</button>
+      </form>
+    </div>
+
+    <!-- MODAL: ADD FRIEND -->
+    <div class="dialog-overlay" id="addFriendModal">
+      <div class="glass-card dialog-card">
+        <h3 style="font-size: 1.05rem;">Add Friend by Code</h3>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.55);">Search for your friend's secret code in the sheet.</p>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="friendSearchCode" placeholder="Code (e.g. 7482)" style="flex: 1;" />
+          <button class="btn btn-primary" style="padding: 10px 18px;" onclick="searchFriendByCode()">Find</button>
+        </div>
+
+        <div id="friendSearchResult" style="min-height: 44px; display: flex; align-items: center; justify-content: center;"></div>
+
+        <button class="btn btn-secondary" onclick="closeAddFriendModal()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- MODAL: FRIEND REQUESTS -->
+    <div class="dialog-overlay" id="requestsModal">
+      <div class="glass-card dialog-card">
+        <h3 style="font-size: 1.05rem;">Friend Requests</h3>
+        <div id="requestsContainer" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: center;">No pending requests.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeRequestsModal()">Close</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ================= CONFIGURATION =================
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/YOUR_SHEETDB_API_ID";
+    const POLL_INTERVAL = 3500;
+
+    let currentUser = null;
+    let activeFriend = null;
+    let renderedMessageIds = new Set();
+    let poller = null;
+    let authMode = 'login';
+
+    // ================= AUTHENTICATION =================
+    function toggleAuthTab(mode) {
+      authMode = mode;
+      document.getElementById('loginTabBtn').classList.toggle('active', mode === 'login');
+      document.getElementById('signupTabBtn').classList.toggle('active', mode === 'signup');
+      document.getElementById('usernameInput').style.display = mode === 'signup' ? 'block' : 'none';
+      document.getElementById('authSubmitBtn').innerText = mode === 'signup' ? 'Create Account' : 'Log In';
+      document.getElementById('authError').innerText = '';
+    }
+
+    async function handleAuthSubmit() {
+      const code = document.getElementById('usercodeInput').value.trim();
+      const pass = document.getElementById('passwordInput').value.trim();
+      const errorEl = document.getElementById('authError');
+      errorEl.innerText = '';
+
+      if (!code || !pass) {
+        errorEl.innerText = 'Please complete all fields.';
+        return;
+      }
+
+      try {
+        if (authMode === 'signup') {
+          const name = document.getElementById('usernameInput').value.trim();
+          if (!name) {
+            errorEl.innerText = 'Username is required.';
+            return;
+          }
+
+          const checkRes = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
+          const existing = await checkRes.json();
+
+          if (existing && existing.length > 0) {
+            errorEl.innerText = 'This code is taken. Choose another.';
+            return;
+          }
+
+          await fetch(`${SHEETDB_URL}?sheet=users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              data: [{ user_code: code, username: name, password: pass }]
+            })
+          });
+
+          currentUser = { user_code: code, username: name };
+          bootInbox();
+
+        } else {
+          const res = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
+          const matched = await res.json();
+
+          if (!matched || matched.length === 0) {
+            errorEl.innerText = 'Code not found. Please sign up.';
+            return;
+          }
+
+          const user = matched[0];
+          if (user.password !== pass) {
+            errorEl.innerText = 'Incorrect password.';
+            return;
+          }
+
+          currentUser = { user_code: user.user_code, username: user.username };
+          bootInbox();
+        }
+      } catch (err) {
+        errorEl.innerText = 'Network error. Verify SheetDB ID.';
+      }
+    }
+
+    function handleLogout() {
+      clearInterval(poller);
+      currentUser = null;
+      activeFriend = null;
+      document.getElementById('inboxScreen').classList.remove('active');
+      document.getElementById('authScreen').classList.add('active');
+    }
+
+    // ================= INBOX & FRIENDS =================
+    function bootInbox() {
+      document.getElementById('authScreen').classList.remove('active');
+      document.getElementById('inboxScreen').classList.add('active');
+      document.getElementById('inboxUsernameTitle').innerText = currentUser.username;
+      document.getElementById('inboxUserCode').innerText = `Your Code: ${currentUser.user_code}`;
+
+      refreshInboxData();
+      clearInterval(poller);
+      poller = setInterval(refreshInboxData, POLL_INTERVAL);
+    }
+
+    async function refreshInboxData() {
+      if (!currentUser) return;
+      await Promise.all([loadFriendsList(), checkFriendRequests()]);
+    }
+
+    async function loadFriendsList() {
+      try {
+        const [reqs1, reqs2, allUsers] = await Promise.all([
+          fetch(`${SHEETDB_URL}/search?requester_code=${currentUser.user_code}&status=accepted&sheet=friends`).then(r => r.json()),
+          fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=accepted&sheet=friends`).then(r => r.json()),
+          fetch(`${SHEETDB_URL}?sheet=users`).then(r => r.json())
+        ]);
+
+        const userMap = {};
+        (allUsers || []).forEach(u => userMap[u.user_code] = u.username);
+
+        const friendCodes = new Set();
+        (reqs1 || []).forEach(r => friendCodes.add(r.receiver_code));
+        (reqs2 || []).forEach(r => friendCodes.add(r.requester_code));
+
+        const listContainer = document.getElementById('friendsList');
+        if (friendCodes.size === 0) {
+          listContainer.innerHTML = `<div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">No friends added yet.<br>Tap '+' above to add using their code.</div>`;
+          return;
+        }
+
+        listContainer.innerHTML = '';
+        friendCodes.forEach(fCode => {
+          const friendName = userMap[fCode] || "User";
+          const item = document.createElement('div');
+          item.className = 'list-item';
+          item.onclick = () => openChat({ user_code: fCode, username: friendName });
+
+          item.innerHTML = `
+            <div style="display: flex; align-items: center;">
+              <div class="avatar">${friendName.charAt(0).toUpperCase()}</div>
+              <div class="item-meta">
+                <span class="title">${friendName}</span>
+                <span class="subtitle">Code: ${fCode}</span>
+              </div>
+            </div>
+            <span style="color: rgba(255,255,255,0.4); font-size: 1rem;">&#10095;</span>
+          `;
+          listContainer.appendChild(item);
+        });
+
+      } catch (err) {
+        console.error("Inbox load error:", err);
+      }
+    }
+
+    async function checkFriendRequests() {
+      try {
+        const res = await fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`);
+        const pending = await res.json();
+        const dot = document.getElementById('requestsDot');
+        dot.style.display = (pending && pending.length > 0) ? 'block' : 'none';
+      } catch (err) {}
+    }
+
+    // ================= DISCOVERY & REQUEST MODALS =================
+    function openAddFriendModal() {
+      document.getElementById('friendSearchCode').value = '';
+      document.getElementById('friendSearchResult').innerHTML = '';
+      document.getElementById('addFriendModal').style.display = 'flex';
+    }
+
+    function closeAddFriendModal() {
+      document.getElementById('addFriendModal').style.display = 'none';
+    }
+
+    async function searchFriendByCode() {
+      const code = document.getElementById('friendSearchCode').value.trim();
+      const resContainer = document.getElementById('friendSearchResult');
+      resContainer.innerHTML = '<span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Searching...</span>';
+
+      if (!code) return;
+      if (code === currentUser.user_code) {
+        resContainer.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">You cannot add yourself.</span>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">User not found.</span>';
+          return;
+        }
+
+        const foundUser = data[0];
+        resContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 6px 0;">
+            <div>
+              <strong>${foundUser.username}</strong>
+              <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Code: ${foundUser.user_code}</div>
+            </div>
+            <button class="btn btn-primary" style="padding: 8px 14px; font-size: 0.8rem;" onclick="sendFriendRequest('${foundUser.user_code}')">Connect</button>
+          </div>
+        `;
+      } catch (err) {
+        resContainer.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">Search failed.</span>';
+      }
+    }
+
+    async function sendFriendRequest(targetCode) {
+      try {
+        await fetch(`${SHEETDB_URL}?sheet=friends`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: [{
+              requester_code: currentUser.user_code,
+              receiver_code: targetCode,
+              status: 'pending'
+            }]
+          })
+        });
+        alert('Friend request sent!');
+        closeAddFriendModal();
+      } catch (err) {
+        alert('Failed to send request.');
+      }
+    }
+
+    async function openRequestsModal() {
+      const container = document.getElementById('requestsContainer');
+      container.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-align: center;">Loading...</span>';
+      document.getElementById('requestsModal').style.display = 'flex';
+
+      try {
+        const [pending, users] = await Promise.all([
+          fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`).then(r => r.json()),
+          fetch(`${SHEETDB_URL}?sheet=users`).then(r => r.json())
+        ]);
+
+        const userMap = {};
+        (users || []).forEach(u => userMap[u.user_code] = u.username);
+
+        if (!pending || pending.length === 0) {
+          container.innerHTML = '<p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: center;">No pending requests.</p>';
+          return;
+        }
+
+        container.innerHTML = '';
+        pending.forEach(req => {
+          const reqName = userMap[req.requester_code] || req.requester_code;
+          const row = document.createElement('div');
+          row.style = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);';
+          row.innerHTML = `
+            <div>
+              <div style="font-weight: 600; font-size: 0.92rem;">${reqName}</div>
+              <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Code: ${req.requester_code}</div>
+            </div>
+            <button class="btn btn-primary" style="padding: 7px 14px; font-size: 0.8rem;" onclick="acceptRequest('${req.requester_code}')">Accept</button>
+          `;
+          container.appendChild(row);
+        });
+      } catch (err) {
+        container.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">Failed to load.</span>';
+      }
+    }
+
+    async function acceptRequest(reqCode) {
+      try {
+        await fetch(`${SHEETDB_URL}/requester_code/${reqCode}?sheet=friends`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: { status: 'accepted' } })
+        });
+        alert('Request accepted!');
+        closeRequestsModal();
+        refreshInboxData();
+      } catch (err) {
+        alert('Failed to accept request.');
+      }
+    }
+
+    function closeRequestsModal() {
+      document.getElementById('requestsModal').style.display = 'none';
+    }
+
+    // ================= REAL-TIME CHAT =================
+    function getChatId(codeA, codeB) {
+      return [codeA, codeB].sort().join('_');
+    }
+
+    function openChat(friend) {
+      activeFriend = friend;
+      renderedMessageIds.clear();
+      document.getElementById('chatBody').innerHTML = '';
+      document.getElementById('chatPartnerName').innerText = friend.username;
+      document.getElementById('chatPartnerCode').innerText = `Code: ${friend.user_code}`;
+      document.getElementById('chatPartnerAvatar').innerText = friend.username.charAt(0).toUpperCase();
+
+      document.getElementById('inboxScreen').classList.remove('active');
+      document.getElementById('chatScreen').classList.add('active');
+
+      fetchDirectMessages();
+    }
+
+    function backToInbox() {
+      activeFriend = null;
+      document.getElementById('chatScreen').classList.remove('active');
+      document.getElementById('inboxScreen').classList.add('active');
+      refreshInboxData();
+    }
+
+    async function fetchDirectMessages() {
+      if (!activeFriend) return;
+      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+
+      try {
+        const res = await fetch(`${SHEETDB_URL}/search?chat_id=${chatId}&sheet=messages`);
+        const messages = await res.json();
+        if (Array.isArray(messages)) renderDirectMessages(messages);
+      } catch (err) {}
+    }
+
+    function renderDirectMessages(messages) {
+      const chatBody = document.getElementById('chatBody');
+      let shouldScroll = false;
+
+      messages.forEach(msg => {
+        const msgId = `${msg.timestamp}_${msg.sender_code}_${msg.message}`;
+        if (!renderedMessageIds.has(msgId)) {
+          renderedMessageIds.add(msgId);
+          shouldScroll = true;
+
+          const isOutgoing = msg.sender_code === currentUser.user_code;
+          const bubble = document.createElement('div');
+          bubble.className = `bubble ${isOutgoing ? 'outgoing' : 'incoming'}`;
+          bubble.innerHTML = `
+            ${escapeHtml(msg.message)}
+            <span class="bubble-time">${msg.timestamp || ''}</span>
+          `;
+          chatBody.appendChild(bubble);
+        }
+      });
+
+      if (shouldScroll) {
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+    }
+
+    async function handleSendMessage(event) {
+      event.preventDefault();
+      const input = document.getElementById('chatMessageInput');
+      const text = input.value.trim();
+      if (!text || !activeFriend) return;
+
+      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      input.value = '';
+
+      try {
+        await fetch(`${SHEETDB_URL}?sheet=messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: [{
+              chat_id: chatId,
+              sender_code: currentUser.user_code,
+              message: text,
+              timestamp: timeStr
+            }]
+          })
+        });
+        fetchDirectMessages();
+      } catch (err) {
+        alert('Failed to send message.');
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
