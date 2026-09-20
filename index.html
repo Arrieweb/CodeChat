@@ -25,6 +25,8 @@
       --bubble-in-border: rgba(255, 255, 255, 0.16);
       --bubble-in-text: #ffffff;
       --nav-bg: #11141c;
+      --menu-bg: rgba(22, 24, 32, 0.96);
+      --menu-hover: rgba(255, 255, 255, 0.08);
     }
 
     [data-theme="light"] {
@@ -42,6 +44,8 @@
       --bubble-in-border: #dcdce2;
       --bubble-in-text: #000000;
       --nav-bg: #f8f9fa;
+      --menu-bg: rgba(255, 255, 255, 0.97);
+      --menu-hover: rgba(0, 0, 0, 0.06);
     }
 
     * {
@@ -69,6 +73,7 @@
       align-items: center;
     }
 
+    /* Ambient Orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -195,7 +200,7 @@
       color: #fff;
     }
 
-    /* LEFT SIDEBAR */
+    /* SIDEBAR */
     .sidebar {
       width: 100%;
       height: 100%;
@@ -234,6 +239,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      flex-shrink: 0;
     }
     .icon-btn:active { transform: scale(0.92); }
 
@@ -324,7 +330,7 @@
     }
     .unread-badge.active { display: inline-block; }
 
-    /* RIGHT CHAT PANEL */
+    /* CHAT PANEL */
     .chat-panel {
       flex: 1;
       height: 100%;
@@ -522,7 +528,7 @@
     }
     .reply-preview-bar.active { display: flex; }
 
-    /* ================= FIX: CHAT INPUT BAR WITH NO HORIZONTAL OVERFLOW ================= */
+    /* CHAT INPUT BAR */
     .chat-input-bar {
       width: 100%;
       max-width: 100%;
@@ -539,7 +545,7 @@
 
     .chat-input-bar input {
       flex: 1 1 auto;
-      min-width: 0; /* Prevents input pushing send button off-screen */
+      min-width: 0;
       border-radius: 20px;
       padding: 9px 14px;
       font-size: 0.92rem;
@@ -573,7 +579,7 @@
       font-size: 1.05rem;
     }
 
-    /* EMOJI PICKER */
+    /* EMOJI DRAWER */
     .emoji-picker {
       background: var(--panel-bg);
       border-top: 1px solid var(--glass-border);
@@ -593,36 +599,67 @@
     }
     .emoji-picker span:hover { transform: scale(1.2); }
 
-    /* ================= FIX: ACTION MENU (DELETE, EDIT, REACT) ================= */
-    .reaction-bar {
+    /* ================= WHATSAPP STYLE CONTEXT MENU DROPDOWN ================= */
+    .wa-context-menu {
       position: fixed;
-      background: var(--panel-bg);
+      background: var(--menu-bg);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
       border: 1px solid var(--glass-border);
-      border-radius: 28px;
-      padding: 8px 12px;
-      display: none;
-      align-items: center;
-      gap: 10px;
+      border-radius: 16px;
+      width: 210px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
       z-index: 100;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-      animation: barPop 0.18s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: menuFadeIn 0.15s ease-out;
     }
-    @keyframes barPop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .reaction-bar span {
-      font-size: 1.3rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.12s;
+    @keyframes menuFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
     }
-    .reaction-bar span:active { transform: scale(1.25); }
 
-    .action-icon-btn {
-      font-size: 0.95rem !important;
-      padding: 4px 6px;
-      border-radius: 8px;
+    .wa-react-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 8px 10px;
       background: var(--glass-card);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .wa-react-bar span {
+      font-size: 1.35rem;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .wa-react-bar span:active { transform: scale(1.3); }
+
+    .wa-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .wa-menu-item:hover {
+      background: var(--menu-hover);
+    }
+    .wa-menu-item.danger {
+      color: #ff453a;
+    }
+    .wa-menu-item svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
     }
 
     /* LIGHTBOX */
@@ -709,6 +746,7 @@
           </div>
         </div>
         <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="icon-btn" onclick="requestNotificationManual()" id="notifStatusBtn" title="Enable Notifications">🔔</button>
           <button class="icon-btn" onclick="openProfileModal()" title="Profile">⚙️</button>
           <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Theme">☀️</button>
           <button class="icon-btn" onclick="openAddFriendModal()" title="Add Friend">&#10010;</button>
@@ -741,6 +779,7 @@
             <div style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="chatPartnerStatus">Offline</div>
           </div>
         </div>
+        <button class="icon-btn" onclick="requestNotificationManual()" title="Notifications">🔔</button>
       </div>
 
       <!-- Pinned Banner -->
@@ -778,7 +817,7 @@
       <!-- Emoji Picker -->
       <div class="emoji-picker" id="emojiPicker"></div>
 
-      <!-- Input Bar (Fixed for Mobile Screens) -->
+      <!-- Input Bar (100% Screen Fitted) -->
       <form class="chat-input-bar" id="chatInputBar" style="display: none;" onsubmit="handleSendMessage(event)">
         <button type="button" class="input-action-btn" onclick="toggleEmojiPicker()" title="Emoji">😊</button>
         <button type="button" class="input-action-btn" onclick="document.getElementById('imageFileInput').click()" title="Send Image">📷</button>
@@ -791,17 +830,54 @@
 
   </div>
 
-  <!-- FLOATING REACTION BAR & ACTIONS -->
-  <div class="reaction-bar" id="reactionBar">
-    <span onclick="reactToMessage('❤️')">❤️</span>
-    <span onclick="reactToMessage('😂')">😂</span>
-    <span onclick="reactToMessage('👍')">👍</span>
-    <span onclick="reactToMessage('🔥')">🔥</span>
-    <span onclick="reactToMessage('😮')">😮</span>
-    <span class="action-icon-btn" onclick="triggerReplyFromMenu()" title="Reply">↩️</span>
-    <span class="action-icon-btn" onclick="pinActiveMessage()" title="Pin">📌</span>
-    <span class="action-icon-btn" id="editOptionBtn" onclick="editActiveMessage()" title="Edit">✏️</span>
-    <span class="action-icon-btn" id="deleteOptionBtn" onclick="deleteActiveMessage()" title="Delete for Everyone" style="color:#ff3b30;">🗑️</span>
+  <!-- WHATSAPP-STYLE CONTEXT MENU (VERTICAL CONTAINER) -->
+  <div class="wa-context-menu" id="waContextMenu">
+    <div class="wa-react-bar">
+      <span onclick="reactToMessage('❤️')">❤️</span>
+      <span onclick="reactToMessage('😂')">😂</span>
+      <span onclick="reactToMessage('👍')">👍</span>
+      <span onclick="reactToMessage('🔥')">🔥</span>
+      <span onclick="reactToMessage('😮')">😮</span>
+    </div>
+
+    <div class="wa-menu-item" onclick="triggerReplyFromMenu()">
+      <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+      <span>Reply</span>
+    </div>
+
+    <div class="wa-menu-item" onclick="copyActiveMessage()">
+      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <span>Copy</span>
+    </div>
+
+    <div class="wa-menu-item" onclick="openForwardModal()">
+      <svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
+      <span>Forward</span>
+    </div>
+
+    <div class="wa-menu-item" onclick="pinActiveMessage()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+      <span>Pin</span>
+    </div>
+
+    <div class="wa-menu-item" id="menuEditOption" onclick="editActiveMessage()">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      <span>Edit</span>
+    </div>
+
+    <div class="wa-menu-item danger" id="menuDeleteOption" onclick="deleteActiveMessage()">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      <span>Delete for Everyone</span>
+    </div>
+  </div>
+
+  <!-- FORWARD MODAL -->
+  <div class="dialog-overlay" id="forwardModal">
+    <div class="dialog-card">
+      <h3 style="font-size: 1.05rem;">Forward message to...</h3>
+      <div id="forwardFriendsList" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+      <button class="btn btn-secondary" onclick="closeForwardModal()">Cancel</button>
+    </div>
   </div>
 
   <!-- LIGHTBOX -->
@@ -825,6 +901,14 @@
 
       <label style="font-size: 0.8rem; color: var(--text-muted);">Change Password</label>
       <input type="password" id="editPasswordInput" placeholder="New Password (leave blank to keep)" />
+
+      <div style="background: var(--input-bg); padding: 12px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 0.88rem; font-weight: 600;">Desktop/Mobile Alerts</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="notifStatusText">Status: Checking...</div>
+        </div>
+        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem;" onclick="requestNotificationManual()">Enable</button>
+      </div>
 
       <div style="display: flex; gap: 8px; margin-top: 6px;">
         <button class="btn btn-primary" style="flex:1;" onclick="saveProfileChanges()">Save Changes</button>
@@ -878,10 +962,11 @@
 
     let currentUser = null;
     let activeFriend = null;
+    let cachedFriends = [];
     let authMode = 'login';
     let activeChatListener = null;
     let selectedMsgId = null;
-    let selectedMsgIsOutgoing = false;
+    let selectedMsgText = "";
     let replyingToMsg = null;
     let typingTimeout = null;
     let mediaRecorder = null;
@@ -897,7 +982,6 @@
       "🔥","✨","💥","💯","🎉","🎊","🚀","🎁","🍕","🍔","🍟","☕️","🍻","🥂","🍷","🍦"
     ];
 
-    // ================= SYNCED INDIAN TIME & LAST SEEN FORMATTER =================
     function getIndianTimeFromDate(d) {
       const dateObj = d || new Date();
       return dateObj.toLocaleTimeString('en-IN', {
@@ -968,7 +1052,7 @@
       document.documentElement.setAttribute('data-theme', saved);
     })();
 
-    // Emojis Drawer
+    // Populate Emojis
     (function populateEmojis() {
       const container = document.getElementById('emojiPicker');
       container.innerHTML = EMOJIS.map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join('');
@@ -985,7 +1069,47 @@
       input.focus();
     }
 
-    // ================= 15-MIN SESSION & AUTO-LOGIN =================
+    // ================= WEB NOTIFICATIONS HANDLER =================
+    function updateNotificationUI() {
+      const statusText = document.getElementById('notifStatusText');
+      if (!("Notification" in window)) {
+        if (statusText) statusText.innerText = "Status: Not supported on this browser";
+        return;
+      }
+      if (statusText) statusText.innerText = `Status: ${Notification.permission}`;
+      const btn = document.getElementById('notifStatusBtn');
+      if (btn) btn.style.opacity = Notification.permission === 'granted' ? '1' : '0.6';
+    }
+
+    function requestNotificationManual() {
+      if (!("Notification" in window)) {
+        alert("This browser does not support desktop/mobile web notifications.");
+        return;
+      }
+      Notification.requestPermission().then((permission) => {
+        updateNotificationUI();
+        if (permission === "granted") {
+          new Notification("iDirect Messenger", {
+            body: "Notifications successfully enabled for incoming chats!",
+            icon: "https://arrieweb.github.io/CodeChat/favicon.ico"
+          });
+        } else {
+          alert("Notification permission was denied. Please allow it from your browser site settings.");
+        }
+      });
+    }
+
+    function dispatchWebNotification(sender, text) {
+      if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+        new Notification(sender, {
+          body: text || "Sent a new message",
+          icon: "https://arrieweb.github.io/CodeChat/favicon.ico",
+          tag: "chat-msg"
+        });
+      }
+    }
+
+    // ================= 15-MIN SESSION =================
     function checkSavedSession() {
       const sessionStr = localStorage.getItem('direct_chat_session');
       if (!sessionStr) return;
@@ -1111,10 +1235,7 @@
 
       renderAvatar(document.getElementById('myNavAvatar'), currentUser.username, currentUser.photoUrl);
 
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-
+      updateNotificationUI();
       setupPresence();
       listenToFriendsAndRequests();
     }
@@ -1129,7 +1250,7 @@
       }
     }
 
-    // ================= ROBUST FIREBASE SERVER TIMESTAMP PRESENCE =================
+    // ================= PRESENCE =================
     function setupPresence() {
       const userStatusRef = db.ref('status/' + currentUser.user_code);
       const connectedRef = db.ref('.info/connected');
@@ -1163,12 +1284,13 @@
       closeChatMobile();
     }
 
-    // ================= PROFILE MODAL =================
+    // ================= PROFILE =================
     function openProfileModal() {
       if (!currentUser) return;
       document.getElementById('editUsernameInput').value = currentUser.username || '';
       document.getElementById('editPasswordInput').value = '';
       renderAvatar(document.getElementById('profileModalAvatar'), currentUser.username, currentUser.photoUrl);
+      updateNotificationUI();
       document.getElementById('profileModal').style.display = 'flex';
     }
 
@@ -1261,9 +1383,12 @@
       }
 
       listContainer.innerHTML = '';
+      cachedFriends = [];
+
       for (let code of friendCodes) {
         const snap = await db.ref('users/' + code).get();
         const info = snap.val() || { username: 'User', user_code: code, photoUrl: '' };
+        cachedFriends.push(info);
 
         const item = document.createElement('div');
         item.className = 'list-item' + (activeFriend && activeFriend.user_code === code ? ' selected' : '');
@@ -1289,7 +1414,7 @@
 
         renderAvatar(document.getElementById(`avatar_${code}`), info.username, info.photoUrl);
 
-        // Track Real-time Presence on Sidebar
+        // Track Real-time Presence
         db.ref('status/' + code).on('value', (s) => {
           const badge = document.getElementById(`badge_${code}`);
           const isOnline = s.val() && s.val().state === 'online';
@@ -1411,7 +1536,7 @@
     }
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
 
-    // ================= REAL-TIME CHAT =================
+    // ================= CHAT =================
     function getChatId(codeA, codeB) {
       return [String(codeA), String(codeB)].sort().join('_');
     }
@@ -1440,15 +1565,17 @@
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       const chatRef = db.ref('messages/' + chatId);
 
-      // Listen for incoming messages
       activeChatListener = chatRef;
       activeChatListener.on('child_added', (snapshot) => {
         const msg = snapshot.val();
         renderBubble(snapshot.key, msg);
 
-        if (String(msg.sender_code).trim() !== String(currentUser.user_code).trim() && (!msg.status || msg.status !== 'seen')) {
-          chatRef.child(snapshot.key).update({ status: 'seen' });
+        if (String(msg.sender_code).trim() !== String(currentUser.user_code).trim()) {
+          if (!msg.status || msg.status !== 'seen') {
+            chatRef.child(snapshot.key).update({ status: 'seen' });
+          }
           playAudioTone('receive');
+          dispatchWebNotification(friend.username, msg.message || "Sent an attachment");
         }
       });
 
@@ -1474,7 +1601,7 @@
         document.getElementById('typingBox').classList.toggle('active', isTyping);
       });
 
-      // Status & Accurate Last Seen Sync
+      // Status & Last Seen
       db.ref('status/' + activeFriend.user_code).on('value', (snap) => {
         const val = snap.val();
         const dot = document.getElementById('chatPartnerOnlineDot');
@@ -1502,7 +1629,7 @@
       return escaped;
     }
 
-    // ================= BUBBLE RENDERING & INTERACTION FIX =================
+    // ================= BUBBLE RENDERING =================
     function renderBubble(key, msg) {
       const chatBody = document.getElementById('chatBody');
       const isOutgoing = String(msg.sender_code).trim() === String(currentUser.user_code).trim();
@@ -1550,26 +1677,26 @@
       chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
 
-      bindSwipeAndTap(row, key, isOutgoing);
+      bindSwipeAndTap(row, key, isOutgoing, msg);
     }
 
-    function bindSwipeAndTap(row, key, isOutgoing) {
+    function bindSwipeAndTap(row, key, isOutgoing, msg) {
       const bubble = row.querySelector('.bubble');
       let startX = 0;
       let currentX = 0;
       let pressTimer = null;
 
-      // Right Click for Desktop
+      // Right Click
       bubble.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        openReactionBar(e, key, isOutgoing);
+        openWaContextMenu(e, key, isOutgoing, msg);
       });
 
-      // Tap for Mobile & Desktop Click
+      // Tap / Click
       bubble.addEventListener('click', (e) => {
         if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO') return;
         e.stopPropagation();
-        openReactionBar(e, key, isOutgoing);
+        openWaContextMenu(e, key, isOutgoing, msg);
       });
 
       // Long Press for Mobile
@@ -1577,7 +1704,7 @@
         startX = e.touches[0].clientX;
         pressTimer = setTimeout(() => {
           if (navigator.vibrate) navigator.vibrate(40);
-          openReactionBar(e.touches[0], key, isOutgoing);
+          openWaContextMenu(e.touches[0], key, isOutgoing, msg);
         }, 450);
       }, { passive: true });
 
@@ -1641,38 +1768,52 @@
       }
     }
 
-    // ================= REACTION BAR (ACTIONS & DELETE FIX) =================
-    function openReactionBar(e, msgId, isOutgoing) {
+    // ================= WHATSAPP STYLE CONTEXT MENU LOGIC =================
+    function openWaContextMenu(e, msgId, isOutgoing, msg) {
       selectedMsgId = msgId;
-      selectedMsgIsOutgoing = isOutgoing;
-      const bar = document.getElementById('reactionBar');
+      selectedMsgText = msg ? (msg.message || "[Attachment]") : "";
 
-      // Crucial Fix: Explicitly show edit and delete button for outgoing messages
-      document.getElementById('editOptionBtn').style.display = isOutgoing ? 'inline-flex' : 'none';
-      document.getElementById('deleteOptionBtn').style.display = isOutgoing ? 'inline-flex' : 'none';
+      const menu = document.getElementById('waContextMenu');
+      document.getElementById('menuEditOption').style.display = isOutgoing ? 'flex' : 'none';
+      document.getElementById('menuDeleteOption').style.display = isOutgoing ? 'flex' : 'none';
 
-      bar.style.display = 'flex';
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth / 2;
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight / 2;
+      menu.style.display = 'flex';
 
-      bar.style.left = Math.min(Math.max(12, clientX - 110), window.innerWidth - 270) + 'px';
-      bar.style.top = Math.max(16, clientY - 55) + 'px';
+      const menuW = 210;
+      const menuH = isOutgoing ? 290 : 210;
+
+      let clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth / 2;
+      let clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight / 2;
+
+      // Smart boundary protection: Never cuts off screen
+      if (clientX + menuW > window.innerWidth - 12) {
+        clientX = window.innerWidth - menuW - 14;
+      }
+      if (clientX < 12) clientX = 12;
+
+      if (clientY + menuH > window.innerHeight - 12) {
+        clientY = window.innerHeight - menuH - 16;
+      }
+      if (clientY < 12) clientY = 12;
+
+      menu.style.left = clientX + 'px';
+      menu.style.top = clientY + 'px';
     }
 
     document.body.onclick = () => {
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     };
 
     async function reactToMessage(emoji) {
       if (!selectedMsgId || !activeFriend) return;
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       await db.ref(`messages/${chatId}/${selectedMsgId}/reactions/${currentUser.user_code}`).set(emoji);
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     function triggerReplyFromMenu() {
       if (selectedMsgId) triggerReply(selectedMsgId);
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     function triggerReply(msgId) {
@@ -1690,12 +1831,64 @@
       document.getElementById('replyPreviewBar').classList.remove('active');
     }
 
+    function copyActiveMessage() {
+      if (!selectedMsgId) return;
+      const bubble = document.getElementById(`content_${selectedMsgId}`);
+      if (bubble) {
+        navigator.clipboard.writeText(bubble.innerText);
+        alert("Message copied!");
+      }
+      document.getElementById('waContextMenu').style.display = 'none';
+    }
+
+    // Forward Message
+    function openForwardModal() {
+      document.getElementById('waContextMenu').style.display = 'none';
+      const container = document.getElementById('forwardFriendsList');
+      container.innerHTML = '';
+
+      if (!cachedFriends || cachedFriends.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No other friends.</p>';
+      } else {
+        cachedFriends.forEach(f => {
+          const item = document.createElement('div');
+          item.className = 'list-item';
+          item.style.padding = '8px 12px';
+          item.onclick = () => forwardToFriend(f);
+          item.innerHTML = `
+            <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(f.username)}</div>
+            <button class="btn btn-primary" style="padding: 4px 10px; font-size:0.75rem;">Send</button>
+          `;
+          container.appendChild(item);
+        });
+      }
+      document.getElementById('forwardModal').style.display = 'flex';
+    }
+    function closeForwardModal() {
+      document.getElementById('forwardModal').style.display = 'none';
+    }
+
+    async function forwardToFriend(targetFriend) {
+      if (!selectedMsgText) return;
+      const forwardChatId = getChatId(currentUser.user_code, targetFriend.user_code);
+      const timeStr = getIndianTimeFromDate();
+
+      await db.ref('messages/' + forwardChatId).push({
+        sender_code: currentUser.user_code,
+        message: selectedMsgText,
+        timestamp: timeStr,
+        status: 'sent'
+      });
+      alert(`Forwarded to ${targetFriend.username}!`);
+      closeForwardModal();
+    }
+
     async function pinActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       const bubble = document.getElementById(`content_${selectedMsgId}`);
       await db.ref('pinned/' + chatId).set({ text: bubble.innerText });
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     }
     async function unpinMessage() {
       if (!activeFriend) return;
@@ -1714,7 +1907,7 @@
           edited: true
         });
       }
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     async function deleteActiveMessage() {
@@ -1728,7 +1921,7 @@
           audio: null
         });
       }
-      document.getElementById('reactionBar').style.display = 'none';
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     // ================= IMAGE COMPRESSION =================
@@ -1889,7 +2082,6 @@
       return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Auto login initialization
     checkSavedSession();
   </script>
 </body>
