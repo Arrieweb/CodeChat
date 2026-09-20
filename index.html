@@ -28,7 +28,6 @@
       align-items: center;
     }
 
-    /* Ambient Apple Glow Orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -45,7 +44,6 @@
       100% { transform: translateY(-30px) scale(1.08); }
     }
 
-    /* Mobile Container Frame */
     .mobile-frame {
       width: 100%;
       max-width: 440px;
@@ -480,11 +478,10 @@
   </div>
 
   <script>
-    // ================= CONNECTED YOUR LIVE SCRIPT URL =================
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUNgUls29dL9yHK5mZGwA_lv88mRkIfZjKQvoMXN72mJCvMC53FV1E2cTnewm1F0Q/exec";
 
     const INBOX_POLL_INTERVAL = 3500;
-    const CHAT_POLL_INTERVAL = 1500; // 1.5 seconds fast real-time sync
+    const CHAT_POLL_INTERVAL = 1500;
 
     let currentUser = null;
     let activeFriend = null;
@@ -493,15 +490,22 @@
     let chatPoller = null;
     let authMode = 'login';
 
-    async function callAPI(params) {
-      const url = new URL(SCRIPT_URL);
-      Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
-      const res = await fetch(url.toString(), {
-        method: 'GET',
-        mode: 'cors',
-        redirect: 'follow'
-      });
-      return res.json();
+    // CORS & Redirect safe API client
+    async function callAPI(payload) {
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        return JSON.parse(text);
+      } catch (err) {
+        console.error("API Error:", err);
+        throw err;
+      }
     }
 
     // ================= AUTH =================
@@ -563,7 +567,7 @@
           bootInbox();
         }
       } catch (err) {
-        errorEl.innerText = 'Server error. Please verify Apps Script deployment.';
+        errorEl.innerText = 'Connection error. Make sure your Apps Script is deployed to "Anyone".';
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = authMode === 'signup' ? 'Create Account' : 'Log In';
@@ -806,7 +810,7 @@
 
       input.value = '';
 
-      // Instant Optimistic UI display
+      // Optimistic instant message
       const msgId = `${timeStr}_${currentUser.user_code}_${text}`;
       renderedMessageIds.add(msgId);
       const chatBody = document.getElementById('chatBody');
