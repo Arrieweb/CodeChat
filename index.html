@@ -16,7 +16,7 @@
     html, body {
       width: 100%;
       height: 100%;
-      height: 100dvh; /* Mobile browser dynamic height fix */
+      height: 100dvh;
       overflow: hidden;
       background-color: #050508;
       color: #fff;
@@ -45,7 +45,7 @@
       100% { transform: translateY(-30px) scale(1.08); }
     }
 
-    /* Mobile Container Frame - strictly fills visible viewport */
+    /* Mobile Container Frame */
     .mobile-frame {
       width: 100%;
       max-width: 440px;
@@ -70,7 +70,6 @@
       }
     }
 
-    /* Screen Management */
     .screen {
       display: none;
       flex-direction: column;
@@ -85,7 +84,6 @@
       display: flex;
     }
 
-    /* Glass Cards & Elements */
     .glass-card {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(28px) saturate(180%);
@@ -140,7 +138,6 @@
     }
     input:focus { border-color: rgba(255, 255, 255, 0.45); }
 
-    /* Auth Screen */
     .auth-container {
       flex: 1;
       display: flex;
@@ -188,7 +185,6 @@
       box-shadow: 0 3px 10px rgba(0,0,0,0.3);
     }
 
-    /* Navigation Headers */
     .glass-nav {
       padding: max(14px, env(safe-area-inset-top)) 16px 12px 16px;
       background: rgba(255, 255, 255, 0.06);
@@ -232,7 +228,6 @@
       display: none;
     }
 
-    /* Inbox List */
     .section-list {
       flex: 1;
       overflow-y: auto;
@@ -274,7 +269,6 @@
     .item-meta .title { font-size: 0.95rem; font-weight: 600; }
     .item-meta .subtitle { font-size: 0.76rem; color: rgba(255, 255, 255, 0.5); }
 
-    /* Chat Area */
     .chat-body {
       flex: 1;
       padding: 14px;
@@ -285,7 +279,6 @@
       gap: 8px;
     }
 
-    /* Instagram Glass Bubbles */
     .bubble {
       max-width: 74%;
       padding: 10px 15px;
@@ -327,10 +320,9 @@
       text-align: right;
     }
 
-    /* Fixed Bottom Chat Input Bar with Safe Area */
     .chat-input-bar {
       padding: 10px 14px;
-      padding-bottom: max(12px, env(safe-area-inset-bottom)); /* Solves the input bar going off-screen */
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
       display: flex;
       align-items: center;
       gap: 8px;
@@ -364,7 +356,6 @@
     }
     .send-btn:active { transform: scale(0.9); }
 
-    /* Modals */
     .dialog-overlay {
       position: absolute;
       inset: 0;
@@ -388,18 +379,17 @@
 </head>
 <body>
 
-  <!-- Ambient Glow Orbs -->
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
 
   <div class="mobile-frame">
-    <!-- SCREEN 1: AUTH -->
+    <!-- AUTH -->
     <div id="authScreen" class="screen active">
       <div class="auth-container">
         <div class="glass-card auth-card">
           <div class="auth-header">
             <h1>Direct</h1>
-            <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-top: 4px;">Liquid Glass Private Messenger</p>
+            <p style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-top: 4px;">Liquid Glass Messenger</p>
           </div>
 
           <div class="auth-tabs">
@@ -417,7 +407,7 @@
       </div>
     </div>
 
-    <!-- SCREEN 2: INBOX -->
+    <!-- INBOX -->
     <div id="inboxScreen" class="screen">
       <div class="glass-nav">
         <div>
@@ -436,12 +426,12 @@
 
       <div class="section-list" id="friendsList">
         <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">
-          No conversations yet.<br>Tap '+' above to add friends by secret code.
+          No conversations yet.<br>Tap '+' above to add friends.
         </div>
       </div>
     </div>
 
-    <!-- SCREEN 3: CHAT SCREEN -->
+    <!-- CHAT SCREEN -->
     <div id="chatScreen" class="screen">
       <div class="glass-nav">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -466,7 +456,7 @@
     <div class="dialog-overlay" id="addFriendModal">
       <div class="glass-card dialog-card">
         <h3 style="font-size: 1rem;">Add Friend by Code</h3>
-        <p style="font-size: 0.78rem; color: rgba(255,255,255,0.55);">Search for your friend's secret code in the sheet.</p>
+        <p style="font-size: 0.78rem; color: rgba(255,255,255,0.55);">Search for your friend's secret code.</p>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="friendSearchCode" placeholder="Code (e.g. 7482)" style="flex: 1;" />
           <button class="btn btn-primary" style="padding: 10px 16px;" onclick="searchFriendByCode()">Find</button>
@@ -490,10 +480,11 @@
   </div>
 
   <script>
-    // ================= CONFIGURATION =================
-    const SHEETDB_URL = "https://sheetdb.io/api/v1/fdsysamy2izlb";
-    const INBOX_POLL_INTERVAL = 4000;
-    const CHAT_POLL_INTERVAL = 2000; // Fast 2-sec real-time syncing for chat
+    // ================= CONNECTED YOUR LIVE SCRIPT URL =================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUNgUls29dL9yHK5mZGwA_lv88mRkIfZjKQvoMXN72mJCvMC53FV1E2cTnewm1F0Q/exec";
+
+    const INBOX_POLL_INTERVAL = 3500;
+    const CHAT_POLL_INTERVAL = 1500; // 1.5 seconds fast real-time sync
 
     let currentUser = null;
     let activeFriend = null;
@@ -502,18 +493,14 @@
     let chatPoller = null;
     let authMode = 'login';
 
-    async function apiRequest(endpoint, options = {}) {
-      const res = await fetch(endpoint, options);
-      if (!res.ok) {
-        let errText = "Server Error";
-        try {
-          const errJson = await res.json();
-          errText = errJson.error || errJson.message || JSON.stringify(errJson);
-        } catch (e) {
-          errText = `HTTP ${res.status}`;
-        }
-        throw new Error(errText);
-      }
+    async function callAPI(params) {
+      const url = new URL(SCRIPT_URL);
+      Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
+      const res = await fetch(url.toString(), {
+        method: 'GET',
+        mode: 'cors',
+        redirect: 'follow'
+      });
       return res.json();
     }
 
@@ -552,47 +539,31 @@
             return;
           }
 
-          const existing = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-          if (Array.isArray(existing) && existing.length > 0) {
-            errorEl.innerText = 'Code is already taken. Choose another.';
+          const res = await callAPI({ action: 'signup', user_code: code, username: name, password: pass });
+          if (!res.success) {
+            errorEl.innerText = res.message || 'Signup failed.';
             submitBtn.disabled = false;
             submitBtn.innerText = "Create Account";
             return;
           }
 
-          await apiRequest(`${SHEETDB_URL}?sheet=users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              data: [{ user_code: String(code), username: name, password: String(pass) }]
-            })
-          });
-
           currentUser = { user_code: String(code), username: name };
           bootInbox();
 
         } else {
-          const matched = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-          if (!Array.isArray(matched) || matched.length === 0) {
-            errorEl.innerText = 'Code not found. Please Sign Up.';
+          const res = await callAPI({ action: 'login', user_code: code, password: pass });
+          if (!res.success) {
+            errorEl.innerText = res.message || 'Invalid Code or Password.';
             submitBtn.disabled = false;
             submitBtn.innerText = "Log In";
             return;
           }
 
-          const user = matched[0];
-          if (String(user.password) !== String(pass)) {
-            errorEl.innerText = 'Incorrect password.';
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Log In";
-            return;
-          }
-
-          currentUser = { user_code: String(user.user_code), username: user.username };
+          currentUser = { user_code: String(res.user.user_code), username: res.user.username };
           bootInbox();
         }
       } catch (err) {
-        errorEl.innerText = `Error: ${err.message}`;
+        errorEl.innerText = 'Server error. Please verify Apps Script deployment.';
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = authMode === 'signup' ? 'Create Account' : 'Log In';
@@ -624,60 +595,41 @@
 
     async function refreshInboxData() {
       if (!currentUser) return;
-      await Promise.all([loadFriendsList(), checkFriendRequests()]);
+      try {
+        const res = await callAPI({ action: 'get_inbox', user_code: currentUser.user_code });
+        if (res.success) {
+          renderFriends(res.friends || []);
+          const dot = document.getElementById('requestsDot');
+          dot.style.display = (res.pending && res.pending.length > 0) ? 'block' : 'none';
+        }
+      } catch (e) {}
     }
 
-    async function loadFriendsList() {
-      try {
-        const [reqs1, reqs2, allUsers] = await Promise.all([
-          apiRequest(`${SHEETDB_URL}/search?requester_code=${currentUser.user_code}&status=accepted&sheet=friends`).catch(() => []),
-          apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=accepted&sheet=friends`).catch(() => []),
-          apiRequest(`${SHEETDB_URL}?sheet=users`).catch(() => [])
-        ]);
+    function renderFriends(friends) {
+      const listContainer = document.getElementById('friendsList');
+      if (friends.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">No friends added yet.<br>Tap '+' above to add friends.</div>`;
+        return;
+      }
 
-        const userMap = {};
-        if (Array.isArray(allUsers)) {
-          allUsers.forEach(u => userMap[String(u.user_code)] = u.username);
-        }
+      listContainer.innerHTML = '';
+      friends.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.onclick = () => openChat(f);
 
-        const friendCodes = new Set();
-        if (Array.isArray(reqs1)) reqs1.forEach(r => friendCodes.add(String(r.receiver_code)));
-        if (Array.isArray(reqs2)) reqs2.forEach(r => friendCodes.add(String(r.requester_code)));
-
-        const listContainer = document.getElementById('friendsList');
-        if (friendCodes.size === 0) {
-          listContainer.innerHTML = `<div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">No friends added yet.<br>Tap '+' above to add friends.</div>`;
-          return;
-        }
-
-        listContainer.innerHTML = '';
-        friendCodes.forEach(fCode => {
-          const friendName = userMap[fCode] || "Friend";
-          const item = document.createElement('div');
-          item.className = 'list-item';
-          item.onclick = () => openChat({ user_code: fCode, username: friendName });
-
-          item.innerHTML = `
-            <div style="display: flex; align-items: center;">
-              <div class="avatar">${friendName.charAt(0).toUpperCase()}</div>
-              <div class="item-meta">
-                <span class="title">${escapeHtml(friendName)}</span>
-                <span class="subtitle">Code: ${fCode}</span>
-              </div>
+        item.innerHTML = `
+          <div style="display: flex; align-items: center;">
+            <div class="avatar">${f.username.charAt(0).toUpperCase()}</div>
+            <div class="item-meta">
+              <span class="title">${escapeHtml(f.username)}</span>
+              <span class="subtitle">Code: ${f.user_code}</span>
             </div>
-            <span style="color: rgba(255,255,255,0.4); font-size: 1rem;">&#10095;</span>
-          `;
-          listContainer.appendChild(item);
-        });
-      } catch (err) {}
-    }
-
-    async function checkFriendRequests() {
-      try {
-        const pending = await apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`);
-        const dot = document.getElementById('requestsDot');
-        dot.style.display = (Array.isArray(pending) && pending.length > 0) ? 'block' : 'none';
-      } catch (err) {}
+          </div>
+          <span style="color: rgba(255,255,255,0.4); font-size: 1rem;">&#10095;</span>
+        `;
+        listContainer.appendChild(item);
+      });
     }
 
     // ================= ADD FRIEND & REQUESTS =================
@@ -700,13 +652,13 @@
       }
 
       try {
-        const data = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-        if (!Array.isArray(data) || data.length === 0) {
+        const res = await callAPI({ action: 'search_user', user_code: code });
+        if (!res.success || !res.user) {
           resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">No user found.</span>';
           return;
         }
 
-        const found = data[0];
+        const found = res.user;
         resContainer.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 0;">
             <div>
@@ -717,27 +669,17 @@
           </div>
         `;
       } catch (err) {
-        resContainer.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Error: ${err.message}</span>`;
+        resContainer.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Error searching.</span>`;
       }
     }
 
     async function sendFriendRequest(targetCode) {
       try {
-        await apiRequest(`${SHEETDB_URL}?sheet=friends`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            data: [{
-              requester_code: String(currentUser.user_code),
-              receiver_code: String(targetCode),
-              status: 'pending'
-            }]
-          })
-        });
+        await callAPI({ action: 'send_request', requester_code: currentUser.user_code, receiver_code: targetCode });
         alert('Friend request sent!');
         closeAddFriendModal();
       } catch (err) {
-        alert('Failed: ' + err.message);
+        alert('Failed to send request.');
       }
     }
 
@@ -747,58 +689,46 @@
       document.getElementById('requestsModal').style.display = 'flex';
 
       try {
-        const [pending, users] = await Promise.all([
-          apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`).catch(() => []),
-          apiRequest(`${SHEETDB_URL}?sheet=users`).catch(() => [])
-        ]);
+        const res = await callAPI({ action: 'get_inbox', user_code: currentUser.user_code });
+        const pending = res.pending || [];
 
-        const userMap = {};
-        if (Array.isArray(users)) {
-          users.forEach(u => userMap[String(u.user_code)] = u.username);
-        }
-
-        if (!Array.isArray(pending) || pending.length === 0) {
+        if (pending.length === 0) {
           container.innerHTML = '<p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: center;">No pending requests.</p>';
           return;
         }
 
         container.innerHTML = '';
         pending.forEach(req => {
-          const reqName = userMap[String(req.requester_code)] || req.requester_code;
           const row = document.createElement('div');
           row.style = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1);';
           row.innerHTML = `
             <div>
-              <div style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(reqName)}</div>
-              <div style="font-size: 0.74rem; color: rgba(255,255,255,0.5);">Code: ${req.requester_code}</div>
+              <div style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(req.username)}</div>
+              <div style="font-size: 0.74rem; color: rgba(255,255,255,0.5);">Code: ${req.user_code}</div>
             </div>
-            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptRequest('${req.requester_code}')">Accept</button>
+            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptRequest('${req.user_code}')">Accept</button>
           `;
           container.appendChild(row);
         });
       } catch (err) {
-        container.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Error: ${err.message}</span>`;
+        container.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Failed to load.</span>`;
       }
     }
 
     async function acceptRequest(reqCode) {
       try {
-        await apiRequest(`${SHEETDB_URL}/requester_code/${reqCode}?sheet=friends`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { status: 'accepted' } })
-        });
+        await callAPI({ action: 'accept_request', requester_code: reqCode, receiver_code: currentUser.user_code });
         alert('Connected!');
         closeRequestsModal();
         refreshInboxData();
       } catch (err) {
-        alert('Failed: ' + err.message);
+        alert('Failed to accept request.');
       }
     }
 
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
 
-    // ================= REAL-TIME CHAT ENGINE =================
+    // ================= REAL-TIME CHAT =================
     function getChatId(codeA, codeB) {
       return [String(codeA), String(codeB)].sort().join('_');
     }
@@ -814,7 +744,6 @@
       document.getElementById('inboxScreen').classList.remove('active');
       document.getElementById('chatScreen').classList.add('active');
 
-      // Fetch immediately and run real-time background sync every 2 seconds
       fetchDirectMessages();
       clearInterval(chatPoller);
       chatPoller = setInterval(fetchDirectMessages, CHAT_POLL_INTERVAL);
@@ -833,8 +762,10 @@
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
 
       try {
-        const messages = await apiRequest(`${SHEETDB_URL}/search?chat_id=${chatId}&sheet=messages`);
-        if (Array.isArray(messages)) renderDirectMessages(messages);
+        const res = await callAPI({ action: 'get_messages', chat_id: chatId });
+        if (res.success && Array.isArray(res.messages)) {
+          renderDirectMessages(res.messages);
+        }
       } catch (err) {}
     }
 
@@ -843,7 +774,6 @@
       let shouldScroll = false;
 
       messages.forEach(msg => {
-        // Unique fingerprint per message
         const msgId = `${msg.timestamp}_${msg.sender_code}_${msg.message}`;
         if (!renderedMessageIds.has(msgId)) {
           renderedMessageIds.add(msgId);
@@ -876,7 +806,7 @@
 
       input.value = '';
 
-      // Optimistic Instant UI rendering for sender
+      // Instant Optimistic UI display
       const msgId = `${timeStr}_${currentUser.user_code}_${text}`;
       renderedMessageIds.add(msgId);
       const chatBody = document.getElementById('chatBody');
@@ -887,22 +817,16 @@
       chatBody.scrollTop = chatBody.scrollHeight;
 
       try {
-        await apiRequest(`${SHEETDB_URL}?sheet=messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            data: [{
-              chat_id: chatId,
-              sender_code: String(currentUser.user_code),
-              message: text,
-              timestamp: timeStr
-            }]
-          })
+        await callAPI({
+          action: 'send_message',
+          chat_id: chatId,
+          sender_code: currentUser.user_code,
+          message: text,
+          timestamp: timeStr
         });
-        // Immediate sync fetch
         fetchDirectMessages();
       } catch (err) {
-        console.error("Message send failed:", err);
+        console.error("Failed to send message:", err);
       }
     }
 
