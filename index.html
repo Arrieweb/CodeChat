@@ -23,7 +23,7 @@
       color: #fff;
     }
 
-    /* Ambient Apple Glow / Mesh Background Orbs */
+    /* Apple Ambient Mesh Glow Orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -91,7 +91,6 @@
       }
     }
 
-    /* Screen Management */
     .screen {
       display: none;
       flex-direction: column;
@@ -107,7 +106,7 @@
       display: flex;
     }
 
-    /* Apple Glass Morphism Standard Card */
+    /* Apple Glassmorphism Card */
     .glass-card {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(28px) saturate(180%);
@@ -117,7 +116,7 @@
       border-radius: 28px;
     }
 
-    /* Rounded Apple Buttons */
+    /* Apple Style Rounded Buttons */
     .btn {
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
       color: #fff;
@@ -152,9 +151,9 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
-    /* Glass Morphism Input Fields */
+    /* Rounded Glass Inputs */
     input {
-      background: rgba(0, 0, 0, 0.28);
+      background: rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 22px;
       padding: 13px 18px;
@@ -230,7 +229,7 @@
       box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
     }
 
-    /* Header Nav Bars */
+    /* Glass Header Nav */
     .glass-nav {
       padding: 18px 20px;
       background: rgba(255, 255, 255, 0.05);
@@ -279,13 +278,13 @@
       background-color: #ff3b30;
       border-radius: 50%;
       position: absolute;
-      top: 1px;
-      right: 1px;
+      top: 2px;
+      right: 2px;
       border: 2px solid #14141d;
       display: none;
     }
 
-    /* List & Contact Items */
+    /* Inbox List */
     .section-list {
       flex: 1;
       overflow-y: auto;
@@ -348,7 +347,7 @@
       margin-top: 2px;
     }
 
-    /* Instagram Glass Bubbles */
+    /* Chat Room */
     .chat-body {
       flex: 1;
       padding: 16px;
@@ -358,27 +357,27 @@
       gap: 10px;
     }
 
+    /* Instagram Style Glass Bubbles */
     .bubble {
       max-width: 74%;
       padding: 12px 18px;
       font-size: 0.94rem;
       line-height: 1.4;
       word-break: break-word;
-      animation: applePop 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+      animation: popAnim 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
       opacity: 0;
       transform: translateY(12px) scale(0.96);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
     }
 
-    @keyframes applePop {
+    @keyframes popAnim {
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
       }
     }
 
-    /* Outgoing Instagram Glass Gradient */
     .bubble.outgoing {
       align-self: flex-end;
       background: linear-gradient(135deg, rgba(123, 63, 228, 0.88), rgba(217, 46, 127, 0.88));
@@ -388,7 +387,6 @@
       box-shadow: 0 8px 24px rgba(123, 63, 228, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.5);
     }
 
-    /* Incoming Frosted Glass */
     .bubble.incoming {
       align-self: flex-start;
       background: rgba(255, 255, 255, 0.12);
@@ -406,7 +404,6 @@
       text-align: right;
     }
 
-    /* Glass Chat Footer Input */
     .chat-input-bar {
       padding: 12px 16px;
       display: flex;
@@ -422,7 +419,6 @@
       flex: 1;
       border-radius: 28px;
       padding: 12px 20px;
-      background: rgba(0, 0, 0, 0.3);
     }
 
     .send-btn {
@@ -446,7 +442,7 @@
       transform: scale(0.9);
     }
 
-    /* Glass Dialog Overlays */
+    /* Glass Modals */
     .dialog-overlay {
       position: absolute;
       inset: 0;
@@ -471,13 +467,13 @@
 </head>
 <body>
 
-  <!-- Background Glow Orbs for Glass Refraction -->
+  <!-- Ambient Glow Orbs -->
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
 
   <div class="mobile-frame">
-    <!-- SCREEN 1: AUTHENTICATION -->
+    <!-- SCREEN 1: LOGIN / SIGNUP -->
     <div id="authScreen" class="screen active">
       <div class="auth-container">
         <div class="glass-card auth-card">
@@ -492,7 +488,7 @@
           </div>
 
           <input type="text" id="usernameInput" placeholder="Your Name" style="display:none;" />
-          <input type="text" id="usercodeInput" placeholder="Code (e.g. 4-6 digits)" maxlength="8" />
+          <input type="text" id="usercodeInput" placeholder="Secret Code (e.g. 1234)" maxlength="8" />
           <input type="password" id="passwordInput" placeholder="Password" />
 
           <button class="btn btn-primary" id="authSubmitBtn" onclick="handleAuthSubmit()">Log In</button>
@@ -520,12 +516,12 @@
 
       <div class="section-list" id="friendsList">
         <div style="text-align: center; color: rgba(255,255,255,0.4); margin-top: 50px;">
-          No conversations yet.<br>Tap '+' to add friends by secret code.
+          No conversations yet.<br>Tap '+' above to add friends by secret code.
         </div>
       </div>
     </div>
 
-    <!-- SCREEN 3: INSTAGRAM DIRECT CHAT -->
+    <!-- SCREEN 3: CHAT SCREEN -->
     <div id="chatScreen" class="screen">
       <div class="glass-nav">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -577,7 +573,7 @@
 
   <script>
     // ================= CONFIGURATION =================
-    const SHEETDB_URL = "https://sheetdb.io/api/v1/YOUR_SHEETDB_API_ID";
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/d1ro69yaz4lgr";
     const POLL_INTERVAL = 3500;
 
     let currentUser = null;
@@ -619,7 +615,7 @@
           const existing = await checkRes.json();
 
           if (existing && existing.length > 0) {
-            errorEl.innerText = 'This code is taken. Choose another.';
+            errorEl.innerText = 'This code is already taken. Choose another.';
             return;
           }
 
@@ -653,7 +649,7 @@
           bootInbox();
         }
       } catch (err) {
-        errorEl.innerText = 'Network error. Verify SheetDB ID.';
+        errorEl.innerText = 'Network error. Please try again.';
       }
     }
 
@@ -724,7 +720,7 @@
         });
 
       } catch (err) {
-        console.error("Inbox load error:", err);
+        console.error("Inbox error:", err);
       }
     }
 
@@ -737,7 +733,7 @@
       } catch (err) {}
     }
 
-    // ================= DISCOVERY & REQUEST MODALS =================
+    // ================= MODALS =================
     function openAddFriendModal() {
       document.getElementById('friendSearchCode').value = '';
       document.getElementById('friendSearchResult').innerHTML = '';
@@ -860,7 +856,7 @@
       document.getElementById('requestsModal').style.display = 'none';
     }
 
-    // ================= REAL-TIME CHAT =================
+    // ================= CHAT =================
     function getChatId(codeA, codeB) {
       return [codeA, codeB].sort().join('_');
     }
