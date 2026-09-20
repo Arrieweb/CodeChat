@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Direct Messenger</title>
   
-  <!-- Firebase SDKs -->
+  <!-- Firebase Compatibility SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -33,7 +33,7 @@
       align-items: center;
     }
 
-    /* Ambient Glow Orbs */
+    /* Ambient Apple Glow Orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -50,7 +50,7 @@
       100% { transform: translateY(-30px) scale(1.08); }
     }
 
-    /* Main Container: Mobile Frame on small screens, Split Web Layout on PC */
+    /* Responsive App Layout: Mobile View on phones, Dual-Pane Split on Desktop */
     .app-layout {
       width: 100%;
       height: 100%;
@@ -58,7 +58,7 @@
       position: relative;
       z-index: 1;
       display: flex;
-      background: rgba(18, 18, 26, 0.6);
+      background: rgba(18, 18, 26, 0.65);
       backdrop-filter: blur(40px) saturate(190%);
       -webkit-backdrop-filter: blur(40px) saturate(190%);
       overflow: hidden;
@@ -66,7 +66,7 @@
 
     @media (min-width: 768px) {
       .app-layout {
-        max-width: 1100px;
+        max-width: 1050px;
         height: 88vh;
         border-radius: 28px;
         border: 1px solid rgba(255, 255, 255, 0.14);
@@ -74,7 +74,6 @@
       }
     }
 
-    /* Glass Cards & Buttons */
     .glass-card {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(28px) saturate(180%);
@@ -123,12 +122,12 @@
     }
     input:focus { border-color: rgba(255, 255, 255, 0.45); }
 
-    /* AUTH OVERLAY */
+    /* AUTH SCREEN */
     #authOverlay {
       position: absolute;
       inset: 0;
       z-index: 50;
-      background: rgba(5, 5, 8, 0.88);
+      background: rgba(5, 5, 8, 0.9);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       display: flex;
@@ -176,7 +175,7 @@
       color: #fff;
     }
 
-    /* SIDEBAR (Contacts & Requests) */
+    /* LEFT SIDEBAR */
     .sidebar {
       width: 100%;
       height: 100%;
@@ -249,7 +248,7 @@
       border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s;
     }
     .list-item:hover { background: rgba(255, 255, 255, 0.1); }
     .list-item:active { transform: scale(0.98); }
@@ -277,7 +276,7 @@
     .item-meta .title { font-size: 0.95rem; font-weight: 600; }
     .item-meta .subtitle { font-size: 0.76rem; color: rgba(255, 255, 255, 0.5); }
 
-    /* CHAT PANEL */
+    /* RIGHT CHAT PANEL */
     .chat-panel {
       flex: 1;
       height: 100%;
@@ -291,7 +290,6 @@
       z-index: 10;
     }
 
-    /* On Desktop: Show chat permanently side-by-side */
     @media (min-width: 768px) {
       .chat-panel {
         position: relative;
@@ -456,10 +454,10 @@
     </div>
   </div>
 
-  <!-- APP DESKTOP & MOBILE WRAPPER -->
+  <!-- MAIN APP -->
   <div class="app-layout">
     
-    <!-- LEFT PANEL: SIDEBAR -->
+    <!-- LEFT PANEL: INBOX / CONTACTS -->
     <div class="sidebar">
       <div class="glass-nav">
         <div>
@@ -483,7 +481,7 @@
       </div>
     </div>
 
-    <!-- RIGHT PANEL: ACTIVE CHAT -->
+    <!-- RIGHT PANEL: CHAT SCREEN -->
     <div class="chat-panel" id="chatPanel">
       <div class="glass-nav" id="chatHeader" style="display: none;">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -537,19 +535,21 @@
   </div>
 
   <script>
-    // ================= STEP 1 CONFIGURATION =================
-    // Paste your Firebase Config keys here from console.firebase.google.com
+    // ================= INTEGRATED YOUR FIREBASE KEYS =================
     const firebaseConfig = {
-      apiKey: "AIzaSyYourApiKeyHere",
-      authDomain: "your-project.firebaseapp.com",
-      databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-      projectId: "your-project",
-      storageBucket: "your-project.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abcdef12345"
+      apiKey: "AIzaSyBPAPlMU4S-6yKhDYZyNMkABzF0jE16dTo",
+      authDomain: "my-direct-85333.firebaseapp.com",
+      databaseURL: "https://my-direct-85333-default-rtdb.firebaseio.com",
+      projectId: "my-direct-85333",
+      storageBucket: "my-direct-85333.firebasestorage.app",
+      messagingSenderId: "831029091786",
+      appId: "1:831029091786:web:9c75ae141ec1828165c333"
     };
 
-    // Initialize Firebase Realtime Database
+    // Google Sheets Webhook for permanent spreadsheet backups
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwUNgUls29dL9yHK5mZGwA_lv88mRkIfZjKQvoMXN72mJCvMC53FV1E2cTnewm1F0Q/exec";
+
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -558,6 +558,17 @@
     let activeFriend = null;
     let authMode = 'login';
     let activeChatListener = null;
+
+    // Silent Google Sheet Backup (Logs data to sheet in background)
+    function backupToGoogleSheet(payload) {
+      try {
+        fetch(GOOGLE_SHEET_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      } catch (e) {}
+    }
 
     // ================= AUTHENTICATION =================
     function toggleAuthTab(mode) {
@@ -601,7 +612,16 @@
             return;
           }
 
+          // 1. Save in Firebase (Instant)
           await userRef.set({
+            user_code: code,
+            username: name,
+            password: pass
+          });
+
+          // 2. Backup in Google Sheet (Permanent)
+          backupToGoogleSheet({
+            action: 'signup',
             user_code: code,
             username: name,
             password: pass
@@ -628,7 +648,7 @@
           loginSuccess();
         }
       } catch (err) {
-        errorEl.innerText = 'Database error: ' + err.message;
+        errorEl.innerText = 'Connection error: ' + err.message;
       } finally {
         submitBtn.disabled = false;
       }
@@ -639,7 +659,7 @@
       document.getElementById('inboxUsernameTitle').innerText = currentUser.username;
       document.getElementById('inboxUserCode').innerText = `Your Code: ${currentUser.user_code}`;
 
-      // Start Realtime Listeners
+      // Start Realtime Friends & Requests Listeners
       listenToFriendsAndRequests();
     }
 
@@ -654,7 +674,6 @@
 
     // ================= REALTIME INBOX & FRIEND SYSTEM =================
     function listenToFriendsAndRequests() {
-      // Listen to friendship updates in real-time (No polling needed!)
       db.ref('friends').on('value', async (snapshot) => {
         const data = snapshot.val() || {};
         const friendCodes = new Set();
@@ -670,11 +689,9 @@
           }
         }
 
-        // Notification badge
         const dot = document.getElementById('requestsDot');
         dot.style.display = pending.length > 0 ? 'block' : 'none';
 
-        // Load friend profiles
         renderFriendsList(Array.from(friendCodes));
       });
     }
@@ -730,7 +747,7 @@
 
       const snap = await db.ref('users/' + code).get();
       if (!snap.exists()) {
-        resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">No user found.</span>';
+        resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">No user found with this code.</span>';
         return;
       }
 
@@ -753,6 +770,14 @@
         receiver_code: targetCode,
         status: 'pending'
       });
+
+      // Sheet backup
+      backupToGoogleSheet({
+        action: 'send_request',
+        requester_code: currentUser.user_code,
+        receiver_code: targetCode
+      });
+
       alert('Request sent!');
       closeAddFriendModal();
     }
@@ -789,20 +814,28 @@
             <div style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(uInfo.username)}</div>
             <div style="font-size: 0.74rem; color: rgba(255,255,255,0.5);">Code: ${req.requester_code}</div>
           </div>
-          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptRequest('${req.key}')">Accept</button>
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptRequest('${req.key}', '${req.requester_code}')">Accept</button>
         `;
         container.appendChild(row);
       }
     }
 
-    async function acceptRequest(key) {
+    async function acceptRequest(key, reqCode) {
       await db.ref('friends/' + key).update({ status: 'accepted' });
+
+      // Sheet backup
+      backupToGoogleSheet({
+        action: 'accept_request',
+        requester_code: reqCode,
+        receiver_code: currentUser.user_code
+      });
+
       alert('Connected!');
       closeRequestsModal();
     }
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
 
-    // ================= ZERO-DELAY REALTIME CHAT =================
+    // ================= ZERO-DELAY REALTIME CHAT ENGINE =================
     function getChatId(codeA, codeB) {
       return [String(codeA), String(codeB)].sort().join('_');
     }
@@ -810,10 +843,8 @@
     function openChat(friend) {
       activeFriend = friend;
 
-      // Update Active UI on sidebar
       document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
 
-      // Show Chat Panel (Slide in on mobile, Fill right pane on PC)
       const chatPanel = document.getElementById('chatPanel');
       chatPanel.classList.add('active');
 
@@ -829,13 +860,12 @@
       const chatBody = document.getElementById('chatBody');
       chatBody.innerHTML = '';
 
-      // Unbind previous listener if any
       if (activeChatListener) activeChatListener.off();
 
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       activeChatListener = db.ref('messages/' + chatId);
 
-      // Instant push on child_added: Triggers in less than 0.1s over WebSocket
+      // Instant push on child_added (< 0.1s websocket sync)
       activeChatListener.on('child_added', (snapshot) => {
         const msg = snapshot.val();
         renderBubble(msg);
@@ -873,8 +903,17 @@
 
       input.value = '';
 
-      // Push to Firebase Realtime DB (both screens update instantly)
+      // 1. Firebase write (Instant sync to both screens)
       await db.ref('messages/' + chatId).push({
+        sender_code: currentUser.user_code,
+        message: text,
+        timestamp: timeStr
+      });
+
+      // 2. Google Sheet Backup (Logs message row in sheet)
+      backupToGoogleSheet({
+        action: 'send_message',
+        chat_id: chatId,
         sender_code: currentUser.user_code,
         message: text,
         timestamp: timeStr
