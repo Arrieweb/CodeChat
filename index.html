@@ -106,7 +106,7 @@
       display: flex;
     }
 
-    /* Apple Glassmorphism Card */
+    /* Glassmorphism Card */
     .glass-card {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(28px) saturate(180%);
@@ -138,6 +138,11 @@
     .btn:active {
       transform: scale(0.96);
       opacity: 0.85;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn-primary {
@@ -573,7 +578,7 @@
 
   <script>
     // ================= CONFIGURATION =================
-    const SHEETDB_URL = "https://sheetdb.io/api/v1/d1ro69yaz4lgr";
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/fdsysamy2izlb";
     const POLL_INTERVAL = 3500;
 
     let currentUser = null;
@@ -581,6 +586,22 @@
     let renderedMessageIds = new Set();
     let poller = null;
     let authMode = 'login';
+
+    // Helper: Safe SheetDB fetch with error handling
+    async function apiRequest(endpoint, options = {}) {
+      const res = await fetch(endpoint, options);
+      if (!res.ok) {
+        let errText = "Server Error";
+        try {
+          const errJson = await res.json();
+          errText = errJson.error || errJson.message || JSON.stringify(errJson);
+        } catch (e) {
+          errText = `HTTP Error ${res.status}`;
+        }
+        throw new Error(errText);
+      }
+      return res.json();
+    }
 
     // ================= AUTHENTICATION =================
     function toggleAuthTab(mode) {
@@ -596,60 +617,77 @@
       const code = document.getElementById('usercodeInput').value.trim();
       const pass = document.getElementById('passwordInput').value.trim();
       const errorEl = document.getElementById('authError');
+      const submitBtn = document.getElementById('authSubmitBtn');
       errorEl.innerText = '';
 
       if (!code || !pass) {
-        errorEl.innerText = 'Please complete all fields.';
+        errorEl.innerText = 'Please fill in all fields.';
         return;
       }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Please wait...";
 
       try {
         if (authMode === 'signup') {
           const name = document.getElementById('usernameInput').value.trim();
           if (!name) {
             errorEl.innerText = 'Username is required.';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Create Account";
             return;
           }
 
-          const checkRes = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-          const existing = await checkRes.json();
+          // Check if code already exists in 'users' tab
+          const existing = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
 
-          if (existing && existing.length > 0) {
-            errorEl.innerText = 'This code is already taken. Choose another.';
+          if (Array.isArray(existing) && existing.length > 0) {
+            errorEl.innerText = 'This code is already taken. Try another.';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Create Account";
             return;
           }
 
-          await fetch(`${SHEETDB_URL}?sheet=users`, {
+          // Insert user into 'users' tab
+          await apiRequest(`${SHEETDB_URL}?sheet=users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              data: [{ user_code: code, username: name, password: pass }]
+              data: [{ user_code: String(code), username: name, password: String(pass) }]
             })
           });
 
-          currentUser = { user_code: code, username: name };
+          currentUser = { user_code: String(code), username: name };
           bootInbox();
 
         } else {
-          const res = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-          const matched = await res.json();
+          // Log In Check
+          const matched = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
 
-          if (!matched || matched.length === 0) {
-            errorEl.innerText = 'Code not found. Please sign up.';
+          if (!Array.isArray(matched) || matched.length === 0) {
+            errorEl.innerText = 'Code not found. Please Sign Up first.';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Log In";
             return;
           }
 
           const user = matched[0];
-          if (user.password !== pass) {
+          if (String(user.password) !== String(pass)) {
             errorEl.innerText = 'Incorrect password.';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Log In";
             return;
           }
 
-          currentUser = { user_code: user.user_code, username: user.username };
+          currentUser = { user_code: String(user.user_code), username: user.username };
           bootInbox();
         }
       } catch (err) {
-        errorEl.innerText = 'Network error. Please try again.';
+        console.error("Auth Error:", err);
+        errorEl.innerText = `SheetDB Error: ${err.message}. Check tab name 'users' and WRITE permissions.`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = authMode === 'signup' ? 'Create Account' : 'Log In';
       }
     }
 
@@ -681,17 +719,19 @@
     async function loadFriendsList() {
       try {
         const [reqs1, reqs2, allUsers] = await Promise.all([
-          fetch(`${SHEETDB_URL}/search?requester_code=${currentUser.user_code}&status=accepted&sheet=friends`).then(r => r.json()),
-          fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=accepted&sheet=friends`).then(r => r.json()),
-          fetch(`${SHEETDB_URL}?sheet=users`).then(r => r.json())
+          apiRequest(`${SHEETDB_URL}/search?requester_code=${currentUser.user_code}&status=accepted&sheet=friends`).catch(() => []),
+          apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=accepted&sheet=friends`).catch(() => []),
+          apiRequest(`${SHEETDB_URL}?sheet=users`).catch(() => [])
         ]);
 
         const userMap = {};
-        (allUsers || []).forEach(u => userMap[u.user_code] = u.username);
+        if (Array.isArray(allUsers)) {
+          allUsers.forEach(u => userMap[String(u.user_code)] = u.username);
+        }
 
         const friendCodes = new Set();
-        (reqs1 || []).forEach(r => friendCodes.add(r.receiver_code));
-        (reqs2 || []).forEach(r => friendCodes.add(r.requester_code));
+        if (Array.isArray(reqs1)) reqs1.forEach(r => friendCodes.add(String(r.receiver_code)));
+        if (Array.isArray(reqs2)) reqs2.forEach(r => friendCodes.add(String(r.requester_code)));
 
         const listContainer = document.getElementById('friendsList');
         if (friendCodes.size === 0) {
@@ -701,7 +741,7 @@
 
         listContainer.innerHTML = '';
         friendCodes.forEach(fCode => {
-          const friendName = userMap[fCode] || "User";
+          const friendName = userMap[fCode] || "Friend";
           const item = document.createElement('div');
           item.className = 'list-item';
           item.onclick = () => openChat({ user_code: fCode, username: friendName });
@@ -710,7 +750,7 @@
             <div style="display: flex; align-items: center;">
               <div class="avatar">${friendName.charAt(0).toUpperCase()}</div>
               <div class="item-meta">
-                <span class="title">${friendName}</span>
+                <span class="title">${escapeHtml(friendName)}</span>
                 <span class="subtitle">Code: ${fCode}</span>
               </div>
             </div>
@@ -720,20 +760,19 @@
         });
 
       } catch (err) {
-        console.error("Inbox error:", err);
+        console.error("Inbox load error:", err);
       }
     }
 
     async function checkFriendRequests() {
       try {
-        const res = await fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`);
-        const pending = await res.json();
+        const pending = await apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`);
         const dot = document.getElementById('requestsDot');
-        dot.style.display = (pending && pending.length > 0) ? 'block' : 'none';
+        dot.style.display = (Array.isArray(pending) && pending.length > 0) ? 'block' : 'none';
       } catch (err) {}
     }
 
-    // ================= MODALS =================
+    // ================= DISCOVERY & REQUESTS =================
     function openAddFriendModal() {
       document.getElementById('friendSearchCode').value = '';
       document.getElementById('friendSearchResult').innerHTML = '';
@@ -747,7 +786,7 @@
     async function searchFriendByCode() {
       const code = document.getElementById('friendSearchCode').value.trim();
       const resContainer = document.getElementById('friendSearchResult');
-      resContainer.innerHTML = '<span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Searching...</span>';
+      resContainer.innerHTML = '<span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Searching sheet...</span>';
 
       if (!code) return;
       if (code === currentUser.user_code) {
@@ -756,11 +795,10 @@
       }
 
       try {
-        const res = await fetch(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
-        const data = await res.json();
+        const data = await apiRequest(`${SHEETDB_URL}/search?user_code=${encodeURIComponent(code)}&sheet=users`);
 
-        if (!data || data.length === 0) {
-          resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">User not found.</span>';
+        if (!Array.isArray(data) || data.length === 0) {
+          resContainer.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">User not found with this code.</span>';
           return;
         }
 
@@ -768,26 +806,26 @@
         resContainer.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 6px 0;">
             <div>
-              <strong>${foundUser.username}</strong>
+              <strong>${escapeHtml(foundUser.username)}</strong>
               <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Code: ${foundUser.user_code}</div>
             </div>
             <button class="btn btn-primary" style="padding: 8px 14px; font-size: 0.8rem;" onclick="sendFriendRequest('${foundUser.user_code}')">Connect</button>
           </div>
         `;
       } catch (err) {
-        resContainer.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">Search failed.</span>';
+        resContainer.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Error: ${err.message}</span>`;
       }
     }
 
     async function sendFriendRequest(targetCode) {
       try {
-        await fetch(`${SHEETDB_URL}?sheet=friends`, {
+        await apiRequest(`${SHEETDB_URL}?sheet=friends`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             data: [{
-              requester_code: currentUser.user_code,
-              receiver_code: targetCode,
+              requester_code: String(currentUser.user_code),
+              receiver_code: String(targetCode),
               status: 'pending'
             }]
           })
@@ -795,7 +833,7 @@
         alert('Friend request sent!');
         closeAddFriendModal();
       } catch (err) {
-        alert('Failed to send request.');
+        alert('Failed to send request: ' + err.message);
       }
     }
 
@@ -806,26 +844,28 @@
 
       try {
         const [pending, users] = await Promise.all([
-          fetch(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`).then(r => r.json()),
-          fetch(`${SHEETDB_URL}?sheet=users`).then(r => r.json())
+          apiRequest(`${SHEETDB_URL}/search?receiver_code=${currentUser.user_code}&status=pending&sheet=friends`).catch(() => []),
+          apiRequest(`${SHEETDB_URL}?sheet=users`).catch(() => [])
         ]);
 
         const userMap = {};
-        (users || []).forEach(u => userMap[u.user_code] = u.username);
+        if (Array.isArray(users)) {
+          users.forEach(u => userMap[String(u.user_code)] = u.username);
+        }
 
-        if (!pending || pending.length === 0) {
+        if (!Array.isArray(pending) || pending.length === 0) {
           container.innerHTML = '<p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: center;">No pending requests.</p>';
           return;
         }
 
         container.innerHTML = '';
         pending.forEach(req => {
-          const reqName = userMap[req.requester_code] || req.requester_code;
+          const reqName = userMap[String(req.requester_code)] || req.requester_code;
           const row = document.createElement('div');
           row.style = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);';
           row.innerHTML = `
             <div>
-              <div style="font-weight: 600; font-size: 0.92rem;">${reqName}</div>
+              <div style="font-weight: 600; font-size: 0.92rem;">${escapeHtml(reqName)}</div>
               <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Code: ${req.requester_code}</div>
             </div>
             <button class="btn btn-primary" style="padding: 7px 14px; font-size: 0.8rem;" onclick="acceptRequest('${req.requester_code}')">Accept</button>
@@ -833,13 +873,13 @@
           container.appendChild(row);
         });
       } catch (err) {
-        container.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">Failed to load.</span>';
+        container.innerHTML = `<span style="color: #ff453a; font-size: 0.8rem;">Error: ${err.message}</span>`;
       }
     }
 
     async function acceptRequest(reqCode) {
       try {
-        await fetch(`${SHEETDB_URL}/requester_code/${reqCode}?sheet=friends`, {
+        await apiRequest(`${SHEETDB_URL}/requester_code/${reqCode}?sheet=friends`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: { status: 'accepted' } })
@@ -848,7 +888,7 @@
         closeRequestsModal();
         refreshInboxData();
       } catch (err) {
-        alert('Failed to accept request.');
+        alert('Failed to accept: ' + err.message);
       }
     }
 
@@ -856,9 +896,9 @@
       document.getElementById('requestsModal').style.display = 'none';
     }
 
-    // ================= CHAT =================
+    // ================= REAL-TIME CHAT =================
     function getChatId(codeA, codeB) {
-      return [codeA, codeB].sort().join('_');
+      return [String(codeA), String(codeB)].sort().join('_');
     }
 
     function openChat(friend) {
@@ -887,8 +927,7 @@
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
 
       try {
-        const res = await fetch(`${SHEETDB_URL}/search?chat_id=${chatId}&sheet=messages`);
-        const messages = await res.json();
+        const messages = await apiRequest(`${SHEETDB_URL}/search?chat_id=${chatId}&sheet=messages`);
         if (Array.isArray(messages)) renderDirectMessages(messages);
       } catch (err) {}
     }
@@ -903,7 +942,7 @@
           renderedMessageIds.add(msgId);
           shouldScroll = true;
 
-          const isOutgoing = msg.sender_code === currentUser.user_code;
+          const isOutgoing = String(msg.sender_code) === String(currentUser.user_code);
           const bubble = document.createElement('div');
           bubble.className = `bubble ${isOutgoing ? 'outgoing' : 'incoming'}`;
           bubble.innerHTML = `
@@ -931,13 +970,13 @@
       input.value = '';
 
       try {
-        await fetch(`${SHEETDB_URL}?sheet=messages`, {
+        await apiRequest(`${SHEETDB_URL}?sheet=messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             data: [{
               chat_id: chatId,
-              sender_code: currentUser.user_code,
+              sender_code: String(currentUser.user_code),
               message: text,
               timestamp: timeStr
             }]
@@ -945,12 +984,12 @@
         });
         fetchDirectMessages();
       } catch (err) {
-        alert('Failed to send message.');
+        alert('Failed to send message: ' + err.message);
       }
     }
 
     function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
   </script>
 </body>
