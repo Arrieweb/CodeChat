@@ -1654,6 +1654,7 @@
       backupToGoogleSheet({ action: 'accept_request', requester_code: reqCode, receiver_code: currentUser.user_code });
       alert('Connected!');
       closeRequestsModal();
+      listenToFriendsAndRequests(); // <-- YEH NAYI LINE ADD HUI HAI
     }
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
 
