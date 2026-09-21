@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>iDirect Messenger</title>
+  <title>iDirect Messenger Pro</title>
   
-  <!-- Firebase Compatibility SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -73,7 +72,6 @@
       align-items: center;
     }
 
-    /* Ambient Orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -255,6 +253,9 @@
       display: none;
     }
 
+    .search-container { padding: 10px 14px; border-bottom: 1px solid var(--glass-border); background: var(--nav-bg); }
+    .search-input { width: 100%; padding: 8px 14px; border-radius: 16px; background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text); font-size: 0.9rem; }
+
     .section-list {
       flex: 1;
       overflow-y: auto;
@@ -356,6 +357,18 @@
       .back-btn-mobile { display: none !important; }
     }
 
+    /* UPLOAD PROGRESS BAR */
+    .upload-progress-bar { width: 100%; height: 3px; background: rgba(0,0,0,0.2); position: absolute; top: 0; left: 0; display: none; z-index: 30; }
+    .upload-progress-fill { height: 100%; background: #34c759; width: 0%; transition: width 0.2s; }
+
+    /* CHAT SEARCH BAR UI */
+    .chat-search-bar { width: 100%; padding: 8px 14px; background: var(--nav-bg); border-bottom: 1px solid var(--glass-border); display: none; align-items: center; gap: 8px; box-shadow: inset 0 -2px 10px rgba(0,0,0,0.1); }
+    .chat-search-bar.active { display: flex; animation: slideDown 0.2s ease; }
+    .chat-search-input { flex: 1; border-radius: 16px; padding: 8px 14px; background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text); font-size: 0.9rem; }
+    .search-match .bubble { box-shadow: 0 0 0 2px #ffcc00, 0 4px 15px rgba(255, 204, 0, 0.4) !important; transform: scale(1.02); }
+    .search-dimmed { opacity: 0.25; }
+    @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
     .pinned-banner {
       background: var(--glass-card);
       border-bottom: 1px solid var(--glass-border);
@@ -451,6 +464,13 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
+    /* Document/Video Bubble Styles */
+    .file-bubble { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 12px; margin-bottom: 4px; cursor: pointer; }
+    .file-bubble .icon { font-size: 1.8rem; }
+    .file-bubble .details { display: flex; flex-direction: column; }
+    .file-bubble .details span { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;}
+    .file-bubble .details small { font-size: 0.7rem; opacity: 0.8; }
+
     .bubble-meta {
       font-size: 0.68rem;
       color: var(--text-muted);
@@ -541,6 +561,7 @@
       border-top: 1px solid var(--glass-border);
       flex-shrink: 0;
       box-sizing: border-box;
+      position: relative;
     }
 
     .chat-input-bar input {
@@ -566,6 +587,7 @@
       flex-shrink: 0;
       color: var(--text);
       font-size: 0.98rem;
+      position: relative;
     }
     .mic-btn.recording { background: #ff3b30; color: #fff; animation: pulseMic 1s infinite; }
     @keyframes pulseMic { 50% { transform: scale(1.1); } }
@@ -578,6 +600,12 @@
       min-width: 36px;
       font-size: 1.05rem;
     }
+
+    /* Attachment Menu */
+    .attach-menu { position: absolute; bottom: 50px; left: 10px; background: var(--menu-bg); padding: 10px; border-radius: 16px; border: 1px solid var(--glass-border); display: none; flex-direction: column; gap: 10px; z-index: 50; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .attach-menu.active { display: flex; }
+    .attach-item { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 6px; font-size: 0.9rem; color: var(--text); }
+    .attach-item:hover { background: var(--menu-hover); border-radius: 10px; }
 
     /* EMOJI DRAWER */
     .emoji-picker {
@@ -599,7 +627,7 @@
     }
     .emoji-picker span:hover { transform: scale(1.2); }
 
-    /* ================= WHATSAPP STYLE CONTEXT MENU DROPDOWN ================= */
+    /* CONTEXT MENU */
     .wa-context-menu {
       position: fixed;
       background: var(--menu-bg);
@@ -645,12 +673,8 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .wa-menu-item:hover {
-      background: var(--menu-hover);
-    }
-    .wa-menu-item.danger {
-      color: #ff453a;
-    }
+    .wa-menu-item:hover { background: var(--menu-hover); }
+    .wa-menu-item.danger { color: #ff453a; }
     .wa-menu-item svg {
       width: 18px;
       height: 18px;
@@ -714,8 +738,8 @@
   <div id="authOverlay">
     <div class="auth-card">
       <div class="auth-header">
-        <h1>Direct</h1>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Zero-Delay Private Messenger</p>
+        <h1>iDirect</h1>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Secure Messenger Pro</p>
       </div>
 
       <div class="auth-tabs">
@@ -758,6 +782,11 @@
         </div>
       </div>
 
+      <!-- Main Sidebar Search -->
+      <div class="search-container">
+        <input type="text" id="searchFriends" class="search-input" placeholder="Search chats or code..." onkeyup="filterFriendsList()" />
+      </div>
+
       <div class="section-list" id="friendsList">
         <div style="text-align: center; color: var(--text-muted); margin-top: 50px;">
           No conversations yet.<br>Tap '+' above to add friends.
@@ -768,7 +797,7 @@
     <!-- RIGHT CHAT PANEL -->
     <div class="chat-panel" id="chatPanel">
       
-      <!-- Upload Progress Bar (Shows during file upload) -->
+      <!-- Upload Progress Bar -->
       <div class="upload-progress-bar" id="uploadProgressContainer">
         <div class="upload-progress-fill" id="uploadProgressBar"></div>
       </div>
@@ -787,14 +816,13 @@
           </div>
         </div>
         
-        <!-- NEW: Header Buttons Group (Search & Notifications) -->
         <div style="display: flex; align-items: center; gap: 6px;">
           <button class="icon-btn" style="width:34px; height:34px; font-size:1rem;" onclick="toggleChatSearch()" title="Search in Chat">🔍</button>
           <button class="icon-btn" style="width:34px; height:34px;" onclick="requestNotificationManual()" title="Notifications">🔔</button>
         </div>
       </div>
 
-      <!-- NEW: Hidden Chat Search Bar -->
+      <!-- Chat Search Bar -->
       <div class="chat-search-bar" id="chatSearchBar">
         <input type="text" id="chatSearchInput" class="chat-search-input" placeholder="Search in this chat..." onkeyup="searchInsideChat()" />
         <button class="icon-btn" style="width:30px; height:30px; font-size:0.8rem;" onclick="toggleChatSearch()">✕</button>
@@ -835,32 +863,28 @@
       <!-- Emoji Picker -->
       <div class="emoji-picker" id="emojiPicker"></div>
 
-      <!-- Chat Input Area -->
+      <!-- Input Bar -->
       <form class="chat-input-bar" id="chatInputBar" style="display: none;" onsubmit="handleSendMessage(event)">
+        <button type="button" class="input-action-btn" onclick="toggleAttachMenu()" title="Attach">📎</button>
         
-        <!-- Attachment Button -->
-        <button type="button" class="input-action-btn" onclick="toggleAttachMenu()">📎</button>
-        
-        <!-- New File Attachment Menu -->
         <div class="attach-menu" id="attachMenu">
           <div class="attach-item" onclick="document.getElementById('imageFileInput').click()">🖼️ Photo/Video</div>
           <div class="attach-item" onclick="document.getElementById('docFileInput').click()">📄 Document (PDF/Zip)</div>
         </div>
         
-        <!-- Hidden File Inputs -->
         <input type="file" id="imageFileInput" accept="image/*,video/*" style="display:none;" onchange="handleFileSelected(event, 'media')" />
         <input type="file" id="docFileInput" accept=".pdf,.zip,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelected(event, 'document')" />
         
-        <input type="text" id="chatMessageInput" placeholder="Type a message..." autocomplete="off" oninput="handleTypingEvent()" />
+        <input type="text" id="chatMessageInput" placeholder="Message..." autocomplete="off" oninput="handleTypingEvent()" />
         <button type="button" class="input-action-btn" onclick="toggleEmojiPicker()" title="Emoji">😊</button>
-        <button type="button" class="input-action-btn mic-btn" id="micBtn" onclick="toggleVoiceRecording()">🎤</button>
+        <button type="button" class="input-action-btn mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice Note">🎤</button>
         <button type="submit" class="input-action-btn send-btn" id="sendBtn">&#10148;</button>
       </form>
     </div>
 
   </div>
 
-  <!-- WHATSAPP-STYLE CONTEXT MENU (VERTICAL CONTAINER) -->
+  <!-- CONTEXT MENU -->
   <div class="wa-context-menu" id="waContextMenu">
     <div class="wa-react-bar">
       <span onclick="reactToMessage('❤️')">❤️</span>
@@ -918,10 +942,12 @@
   <!-- FRIEND PROFILE MODAL -->
   <div class="dialog-overlay" id="friendProfileModal" onclick="if(event.target===this) this.style.display='none'">
     <div class="dialog-card" style="align-items: center; text-align: center;">
-      <img src="" id="fpImage" class="full-profile-img" style="display:none;" />
+      <img src="" id="fpImage" class="full-profile-img" style="display:none; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;" />
       <div id="fpInitials" class="avatar" style="width:150px; height:150px; font-size:4rem; margin:0 auto; display:flex;"></div>
       <h2 id="fpName" style="margin-top:10px; font-size:1.4rem;">Name</h2>
       <p id="fpCode" style="color:var(--text-muted); font-size:0.9rem;">Code: ---</p>
+      
+      <button class="btn" id="blockUserBtn" style="width:100%; margin-top:15px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);" onclick="toggleBlockUser()">🚫 Block User</button>
       <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="document.getElementById('friendProfileModal').style.display='none'">Close</button>
     </div>
   </div>
@@ -929,7 +955,7 @@
   <!-- SELF PROFILE MODAL -->
   <div class="dialog-overlay" id="profileModal">
     <div class="dialog-card">
-      <h3 style="font-size: 1.1rem; text-align:center;">My Profile</h3>
+      <h3 style="font-size: 1.1rem;">My Profile</h3>
       
       <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
         <div class="avatar" id="profileModalAvatar" style="width: 72px; height: 72px; font-size: 1.8rem; cursor: pointer;" onclick="document.getElementById('dpFileInput').click()">?</div>
@@ -983,11 +1009,7 @@
     </div>
   </div>
 
-  <!-- =========================================
-       PART 3: CONFIGURATION & SETUP SCRIPTS
-       ========================================= -->
   <script>
-    // Paste your Firebase Config keys here
     const firebaseConfig = {
       apiKey: "AIzaSyBPAPlMU4S-6yKhDYZyNMkABzF0jE16dTo",
       authDomain: "my-direct-85333.firebaseapp.com",
@@ -998,30 +1020,25 @@
       appId: "1:831029091786:web:9c75ae141ec1828165c333"
     };
 
-    // Apne update kiye hue Apps Script ka URL yaha daalein (Jisme Google Drive file upload logic hai)
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwUNgUls29dL9yHK5mZGwA_lv88mRkIfZjKQvoMXN72mJCvMC53FV1E2cTnewm1F0Q/exec";
-    
-    // Auto-login session lock timer
-    const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+    const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 Days
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentUser = null, activeFriend = null, authMode = 'login', activeChatListener = null;
-    let selectedMsgId = null, selectedMsgText = "";
-    let cachedFriends = []; // Naye Search feature ke liye 
-
-    // File Attachment Menu Toggle
-    function toggleAttachMenu() {
-      const menu = document.getElementById('attachMenu');
-      menu.classList.toggle('active');
-    }
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.attach-menu') && !e.target.closest('.input-action-btn')) {
-        const attachMenu = document.getElementById('attachMenu');
-        if (attachMenu) attachMenu.classList.remove('active');
-      }
-    });
+    let currentUser = null;
+    let activeFriend = null;
+    let cachedFriends = [];
+    let authMode = 'login';
+    let activeChatListener = null;
+    let selectedMsgId = null;
+    let selectedMsgText = "";
+    let replyingToMsg = null;
+    let typingTimeout = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isFriendBlockedByMe = false;
+    let amIBlockedByFriend = false;
 
     const EMOJIS = [
       "😀","😃","😄","😁","😆","😅","😂","🤣","🥲","☺️","😊","😇","🙂","🙃","😉","😌",
@@ -1055,32 +1072,25 @@
       return isToday ? `Last seen today at ${timeStr}` : `Last seen on ${d.toLocaleDateString('en-IN')} at ${timeStr}`;
     }
 
-    // =========================================
-    // SFX & HAPTICS (TICK/POP) 
-    // =========================================
     function playAudioTone(type) {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
         if (type === 'send') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(400, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.04);
-          gain.gain.setValueAtTime(0.05, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-          osc.start(); osc.stop(ctx.currentTime + 0.04);
+          osc.frequency.setValueAtTime(520, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
         } else {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.06);
-          gain.gain.setValueAtTime(0.08, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-          osc.start(); osc.stop(ctx.currentTime + 0.06);
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.14);
         }
-        if (navigator.vibrate) navigator.vibrate(type === 'send' ? 10 : 20);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.14);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.14);
       } catch (e) {}
     }
 
@@ -1110,7 +1120,6 @@
       document.documentElement.setAttribute('data-theme', saved);
     })();
 
-    // Populate Emojis
     (function populateEmojis() {
       const container = document.getElementById('emojiPicker');
       container.innerHTML = EMOJIS.map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join('');
@@ -1127,11 +1136,21 @@
       input.focus();
     }
 
-    // ================= WEB NOTIFICATIONS HANDLER =================
+    function toggleAttachMenu() {
+      const menu = document.getElementById('attachMenu');
+      menu.classList.toggle('active');
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.attach-menu') && !e.target.closest('.input-action-btn')) {
+        const attachMenu = document.getElementById('attachMenu');
+        if (attachMenu) attachMenu.classList.remove('active');
+      }
+    });
+
     function updateNotificationUI() {
       const statusText = document.getElementById('notifStatusText');
       if (!("Notification" in window)) {
-        if (statusText) statusText.innerText = "Status: Not supported on this browser";
+        if (statusText) statusText.innerText = "Status: Not supported";
         return;
       }
       if (statusText) statusText.innerText = `Status: ${Notification.permission}`;
@@ -1140,78 +1159,37 @@
     }
 
     function requestNotificationManual() {
-      if (!("Notification" in window)) {
-        alert("This browser does not support desktop/mobile web notifications.");
-        return;
-      }
+      if (!("Notification" in window)) return;
       Notification.requestPermission().then((permission) => {
         updateNotificationUI();
         if (permission === "granted") {
-          new Notification("iDirect Messenger", {
-            body: "Notifications successfully enabled for incoming chats!",
-            icon: "https://arrieweb.github.io/CodeChat/favicon.ico"
-          });
-        } else {
-          alert("Notification permission was denied. Please allow it from your browser site settings.");
+          new Notification("iDirect Messenger", { body: "Notifications enabled!" });
         }
       });
     }
 
     function dispatchWebNotification(sender, text) {
       if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-        new Notification(sender, {
-          body: text || "Sent a new message",
-          icon: "https://arrieweb.github.io/CodeChat/favicon.ico",
-          tag: "chat-msg"
-        });
+        new Notification(sender, { body: text || "New message" });
       }
     }
 
-    // ================= 15-MIN SESSION =================
     function checkSavedSession() {
       const sessionStr = localStorage.getItem('direct_chat_session');
       if (!sessionStr) return;
-
       try {
         const session = JSON.parse(sessionStr);
-        const now = Date.now();
-        const diff = now - (session.lastActive || 0);
-
-        if (diff < SESSION_TIMEOUT_MS) {
-          currentUser = session.user;
-          updateSessionTimestamp();
-          loginSuccess();
-        } else {
-          localStorage.removeItem('direct_chat_session');
-        }
+        currentUser = session.user;
+        loginSuccess();
       } catch (e) {
         localStorage.removeItem('direct_chat_session');
       }
     }
 
     function saveSession(user) {
-      const session = { user: user, lastActive: Date.now() };
-      localStorage.setItem('direct_chat_session', JSON.stringify(session));
+      localStorage.setItem('direct_chat_session', JSON.stringify({ user: user }));
     }
 
-    function updateSessionTimestamp() {
-      const sessionStr = localStorage.getItem('direct_chat_session');
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          session.lastActive = Date.now();
-          localStorage.setItem('direct_chat_session', JSON.stringify(session));
-        } catch (e) {}
-      }
-    }
-
-    ['click', 'touchstart', 'keydown'].forEach(evt => {
-      window.addEventListener(evt, () => {
-        if (currentUser) updateSessionTimestamp();
-      }, { passive: true });
-    });
-
-    // ================= AUTH =================
     function toggleAuthTab(mode) {
       authMode = mode;
       document.getElementById('loginTabBtn').classList.toggle('active', mode === 'login');
@@ -1234,7 +1212,6 @@
       }
 
       submitBtn.disabled = true;
-
       try {
         const userRef = db.ref('users/' + code);
         const snapshot = await userRef.get();
@@ -1246,9 +1223,8 @@
             submitBtn.disabled = false;
             return;
           }
-
           if (snapshot.exists()) {
-            errorEl.innerText = 'This code is already taken. Pick another.';
+            errorEl.innerText = 'Code already taken.';
             submitBtn.disabled = false;
             return;
           }
@@ -1260,27 +1236,24 @@
           currentUser = newUser;
           saveSession(currentUser);
           loginSuccess();
-
         } else {
           if (!snapshot.exists()) {
-            errorEl.innerText = 'Code not found. Please Sign Up.';
+            errorEl.innerText = 'Code not found.';
             submitBtn.disabled = false;
             return;
           }
-
           const userData = snapshot.val();
           if (String(userData.password) !== String(pass)) {
             errorEl.innerText = 'Incorrect password.';
             submitBtn.disabled = false;
             return;
           }
-
           currentUser = userData;
           saveSession(currentUser);
           loginSuccess();
         }
       } catch (err) {
-        errorEl.innerText = 'Connection error: ' + err.message;
+        errorEl.innerText = 'Error: ' + err.message;
       } finally {
         submitBtn.disabled = false;
       }
@@ -1289,10 +1262,8 @@
     function loginSuccess() {
       document.getElementById('authOverlay').style.display = 'none';
       document.getElementById('inboxUsernameTitle').innerText = currentUser.username;
-      document.getElementById('inboxUserCode').innerText = `Your Code: ${currentUser.user_code}`;
-
+      document.getElementById('inboxUserCode').innerText = `Code: ${currentUser.user_code}`;
       renderAvatar(document.getElementById('myNavAvatar'), currentUser.username, currentUser.photoUrl);
-
       updateNotificationUI();
       setupPresence();
       listenToFriendsAndRequests();
@@ -1308,30 +1279,18 @@
       }
     }
 
-    // ================= PRESENCE =================
     function setupPresence() {
       const userStatusRef = db.ref('status/' + currentUser.user_code);
-      const connectedRef = db.ref('.info/connected');
-
-      connectedRef.on('value', (snap) => {
+      db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === false) return;
-        userStatusRef.onDisconnect().set({
-          state: 'offline',
-          last_seen: firebase.database.ServerValue.TIMESTAMP
-        });
-        userStatusRef.set({
-          state: 'online',
-          last_seen: firebase.database.ServerValue.TIMESTAMP
-        });
+        userStatusRef.onDisconnect().set({ state: 'offline', last_seen: firebase.database.ServerValue.TIMESTAMP });
+        userStatusRef.set({ state: 'online', last_seen: firebase.database.ServerValue.TIMESTAMP });
       });
     }
 
     function handleLogout() {
       if (currentUser) {
-        db.ref('status/' + currentUser.user_code).set({
-          state: 'offline',
-          last_seen: firebase.database.ServerValue.TIMESTAMP
-        });
+        db.ref('status/' + currentUser.user_code).set({ state: 'offline', last_seen: firebase.database.ServerValue.TIMESTAMP });
       }
       localStorage.removeItem('direct_chat_session');
       if (activeChatListener) activeChatListener.off();
@@ -1342,7 +1301,6 @@
       closeChatMobile();
     }
 
-    // ================= PROFILE =================
     function openProfileModal() {
       if (!currentUser) return;
       document.getElementById('editUsernameInput').value = currentUser.username || '';
@@ -1352,18 +1310,15 @@
       document.getElementById('profileModal').style.display = 'flex';
     }
 
-    function closeProfileModal() {
-      document.getElementById('profileModal').style.display = 'none';
-    }
+    function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
 
     function handleDpUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(evt) {
-        compressImage(evt.target.result, 180, 180, 0.75, (compressedBase64) => {
-          currentUser.photoUrl = compressedBase64;
+        compressImage(evt.target.result, 180, 180, 0.75, (base64) => {
+          currentUser.photoUrl = base64;
           renderAvatar(document.getElementById('profileModalAvatar'), currentUser.username, currentUser.photoUrl);
         });
       };
@@ -1373,114 +1328,72 @@
     async function saveProfileChanges() {
       const newName = document.getElementById('editUsernameInput').value.trim();
       const newPass = document.getElementById('editPasswordInput').value.trim();
+      if (!newName) return alert("Name required.");
 
-      if (!newName) {
-        alert("Username cannot be empty.");
-        return;
-      }
-
-      const updates = {
-        username: newName,
-        photoUrl: currentUser.photoUrl || ''
-      };
-
+      const updates = { username: newName, photoUrl: currentUser.photoUrl || '' };
       if (newPass) updates.password = newPass;
 
       try {
         await db.ref('users/' + currentUser.user_code).update(updates);
         currentUser.username = newName;
         if (newPass) currentUser.password = newPass;
-
         saveSession(currentUser);
         document.getElementById('inboxUsernameTitle').innerText = currentUser.username;
         renderAvatar(document.getElementById('myNavAvatar'), currentUser.username, currentUser.photoUrl);
-
-        backupToGoogleSheet({
-          action: 'signup',
-          user_code: currentUser.user_code,
-          username: newName,
-          password: currentUser.password
-        });
-
-        alert("Profile updated successfully!");
+        alert("Updated successfully!");
         closeProfileModal();
       } catch (err) {
-        alert("Failed to update: " + err.message);
+        alert("Failed: " + err.message);
       }
     }
 
-    // ================= ADVANCED CHAT SEARCH =================
+    // SEARCH & FILTER
     function toggleChatSearch() {
       const bar = document.getElementById('chatSearchBar');
       const input = document.getElementById('chatSearchInput');
       bar.classList.toggle('active');
-      if (bar.classList.contains('active')) {
-        input.focus();
-      } else {
-        input.value = '';
-        searchInsideChat(); // Clear search results on close
-      }
+      if (bar.classList.contains('active')) input.focus();
+      else { input.value = ''; searchInsideChat(); }
     }
 
     function searchInsideChat() {
       const query = document.getElementById('chatSearchInput').value.toLowerCase().trim();
       const bubbles = document.querySelectorAll('.bubble-row');
       let firstMatch = null;
-
       bubbles.forEach(row => {
-        row.classList.remove('search-match');
-        row.classList.remove('search-dimmed');
-
+        row.classList.remove('search-match', 'search-dimmed');
         if (!query) return;
-
         const contentDiv = row.querySelector('[id^="content_"]');
         if (!contentDiv) return;
-        const textContent = contentDiv.textContent || contentDiv.innerText;
-
-        if (textContent.toLowerCase().includes(query)) {
+        if ((contentDiv.textContent || contentDiv.innerText).toLowerCase().includes(query)) {
           row.classList.add('search-match');
-          if (!firstMatch) firstMatch = row; 
+          if (!firstMatch) firstMatch = row;
         } else {
           row.classList.add('search-dimmed');
         }
       });
-
-      if (firstMatch && query) {
-        firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      if (firstMatch && query) firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // Advanced Search Filter (By Name or Code)
     function filterFriendsList() {
       const query = document.getElementById('searchFriends').value.toLowerCase().trim();
-      
-      if (!query) {
-        renderFriendsUI(cachedFriends);
-        return;
-      }
-      
-      const filtered = cachedFriends.filter(f => 
-        (f.username && f.username.toLowerCase().includes(query)) || 
-        (f.user_code && String(f.user_code).includes(query))
-      );
-      
+      if (!query) { renderFriendsUI(cachedFriends); return; }
+      const filtered = cachedFriends.filter(f => (f.username && f.username.toLowerCase().includes(query)) || (f.user_code && String(f.user_code).includes(query)));
       renderFriendsUI(filtered);
     }
 
     function renderFriendsUI(friendsArray) {
       const listContainer = document.getElementById('friendsList');
       if (friendsArray.length === 0) {
-        listContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); margin-top: 50px;">No matching chats found.</div>`;
+        listContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); margin-top: 50px;">No chats found.</div>`;
         return;
       }
-
       listContainer.innerHTML = '';
       friendsArray.forEach(info => {
         const code = info.user_code;
         const item = document.createElement('div');
         item.className = 'list-item' + (activeFriend && activeFriend.user_code === code ? ' selected' : '');
         item.onclick = () => openChat({ user_code: code, username: info.username, photoUrl: info.photoUrl });
-
         item.innerHTML = `
           <div style="display: flex; align-items: center; min-width: 0;">
             <div class="avatar-wrapper">
@@ -1492,28 +1405,16 @@
               <span class="subtitle">Code: ${code}</span>
             </div>
           </div>
-          <div style="display: flex; align-items: center; flex-shrink: 0;">
-            <span class="unread-badge" id="unread_${code}">0</span>
-            <span style="color: var(--text-muted); font-size: 1rem; margin-left: 6px;">&#10095;</span>
-          </div>
+          <span class="unread-badge" id="unread_${code}">0</span>
         `;
         listContainer.appendChild(item);
+        renderAvatar(document.getElementById(`avatar_${code}`), info.username, info.photoUrl);
 
-        if (info.photoUrl) {
-          document.getElementById(`avatar_${code}`).style.backgroundImage = `url(${info.photoUrl})`;
-          document.getElementById(`avatar_${code}`).innerText = '';
-        } else {
-          document.getElementById(`avatar_${code}`).innerText = (info.username || '?').charAt(0).toUpperCase();
-        }
-
-        // Track Real-time Presence
         db.ref('status/' + code).on('value', (s) => {
           const badge = document.getElementById(`badge_${code}`);
-          const isOnline = s.val() && s.val().state === 'online';
-          if (badge) badge.classList.toggle('active', isOnline);
+          if (badge) badge.classList.toggle('active', s.val() && s.val().state === 'online');
         });
 
-        // Track Unread Count
         const chatId = getChatId(currentUser.user_code, code);
         db.ref('messages/' + chatId).on('value', (s) => {
           const msgs = s.val() || {};
@@ -1522,15 +1423,11 @@
             if (msgs[mId].sender_code === code && msgs[mId].status !== 'seen') unread++;
           }
           const badgeEl = document.getElementById(`unread_${code}`);
-          if (badgeEl) {
-            badgeEl.innerText = unread;
-            badgeEl.classList.toggle('active', unread > 0);
-          }
+          if (badgeEl) { badgeEl.innerText = unread; badgeEl.classList.toggle('active', unread > 0); }
         });
       });
     }
 
-    // ================= INBOX =================
     function listenToFriendsAndRequests() {
       db.ref('friends').on('value', async (snapshot) => {
         const data = snapshot.val() || {};
@@ -1547,22 +1444,18 @@
           }
         }
 
-        const dot = document.getElementById('requestsDot');
-        dot.style.display = pending.length > 0 ? 'block' : 'none';
+        document.getElementById('requestsDot').style.display = pending.length > 0 ? 'block' : 'none';
 
         cachedFriends = [];
         for (let code of Array.from(friendCodes)) {
           const snap = await db.ref('users/' + code).get();
-          if (snap.exists()) {
-            cachedFriends.push(snap.val());
-          }
+          if (snap.exists()) cachedFriends.push(snap.val());
         }
-        
         filterFriendsList();
       });
     }
 
-    // ================= DISCOVERY =================
+    // DISCOVERY
     function openAddFriendModal() {
       document.getElementById('friendSearchCode').value = '';
       document.getElementById('friendSearchResult').innerHTML = '';
@@ -1573,39 +1466,24 @@
     async function searchFriendByCode() {
       const code = document.getElementById('friendSearchCode').value.trim();
       const resContainer = document.getElementById('friendSearchResult');
-      resContainer.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted);">Searching...</span>';
-
       if (!code) return;
-      if (code === currentUser.user_code) {
-        resContainer.innerHTML = '<span style="color: #ff453a; font-size: 0.8rem;">Cannot add your own code.</span>';
-        return;
-      }
+      if (code === currentUser.user_code) { resContainer.innerHTML = '<span style="color:#ff3b30;font-size:0.8rem;">Cannot add yourself</span>'; return; }
 
       const snap = await db.ref('users/' + code).get();
-      if (!snap.exists()) {
-        resContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">No user found.</span>';
-        return;
-      }
+      if (!snap.exists()) { resContainer.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Not found</span>'; return; }
 
       const found = snap.val();
       resContainer.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 0;">
-          <div>
-            <strong>${escapeHtml(found.username)}</strong>
-            <div style="font-size: 0.74rem; color: var(--text-muted);">Code: ${found.user_code}</div>
-          </div>
-          <button class="btn btn-primary" style="padding: 7px 14px; font-size: 0.8rem;" onclick="sendFriendRequest('${found.user_code}')">Connect</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <strong>${escapeHtml(found.username)}</strong>
+          <button class="btn btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="sendFriendRequest('${found.user_code}')">Connect</button>
         </div>
       `;
     }
 
     async function sendFriendRequest(targetCode) {
       const relId = [currentUser.user_code, targetCode].sort().join('_');
-      await db.ref('friends/' + relId).set({
-        requester_code: currentUser.user_code,
-        receiver_code: targetCode,
-        status: 'pending'
-      });
+      await db.ref('friends/' + relId).set({ requester_code: currentUser.user_code, receiver_code: targetCode, status: 'pending' });
       backupToGoogleSheet({ action: 'send_request', requester_code: currentUser.user_code, receiver_code: targetCode });
       alert('Request sent!');
       closeAddFriendModal();
@@ -1613,38 +1491,26 @@
 
     async function openRequestsModal() {
       const container = document.getElementById('requestsContainer');
-      container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">Loading...</span>';
+      container.innerHTML = 'Loading...';
       document.getElementById('requestsModal').style.display = 'flex';
 
       const snap = await db.ref('friends').get();
       const all = snap.val() || {};
       const pending = [];
-
       for (let key in all) {
         if (all[key].status === 'pending' && all[key].receiver_code === currentUser.user_code) {
           pending.push({ key, requester_code: all[key].requester_code });
         }
       }
 
-      if (pending.length === 0) {
-        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">No pending requests.</p>';
-        return;
-      }
-
+      if (pending.length === 0) { container.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); text-align:center;">No requests</p>'; return; }
       container.innerHTML = '';
       for (let req of pending) {
         const uSnap = await db.ref('users/' + req.requester_code).get();
         const uInfo = uSnap.val() || { username: 'User' };
-
         const row = document.createElement('div');
-        row.style = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--glass-border);';
-        row.innerHTML = `
-          <div>
-            <div style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(uInfo.username)}</div>
-            <div style="font-size: 0.74rem; color: var(--text-muted);">Code: ${req.requester_code}</div>
-          </div>
-          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptRequest('${req.key}', '${req.requester_code}')">Accept</button>
-        `;
+        row.style = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--glass-border);';
+        row.innerHTML = `<div><strong>${escapeHtml(uInfo.username)}</strong></div><button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem;" onclick="acceptRequest('${req.key}', '${req.requester_code}')">Accept</button>`;
         container.appendChild(row);
       }
     }
@@ -1654,14 +1520,12 @@
       backupToGoogleSheet({ action: 'accept_request', requester_code: reqCode, receiver_code: currentUser.user_code });
       alert('Connected!');
       closeRequestsModal();
-      listenToFriendsAndRequests(); // <-- YEH NAYI LINE ADD HUI HAI
+      listenToFriendsAndRequests();
     }
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
 
-    // ================= CHAT =================
-    function getChatId(codeA, codeB) {
-      return [String(codeA), String(codeB)].sort().join('_');
-    }
+    // CHAT & BLOCK LOGIC
+    function getChatId(codeA, codeB) { return [String(codeA), String(codeB)].sort().join('_'); }
 
     function viewFriendProfile() {
       if (!activeFriend) return;
@@ -1676,16 +1540,41 @@
         document.getElementById('fpInitials').style.display = 'flex';
         document.getElementById('fpInitials').innerText = activeFriend.username.charAt(0).toUpperCase();
       }
+
+      const blockBtn = document.getElementById('blockUserBtn');
+      if (isFriendBlockedByMe) {
+        blockBtn.innerText = "✅ Unblock User";
+        blockBtn.style.color = "#34c759";
+        blockBtn.style.background = "rgba(52, 199, 89, 0.1)";
+      } else {
+        blockBtn.innerText = "🚫 Block User";
+        blockBtn.style.color = "#ff3b30";
+        blockBtn.style.background = "rgba(255, 59, 48, 0.1)";
+      }
+
       document.getElementById('friendProfileModal').style.display = 'flex';
+    }
+
+    async function toggleBlockUser() {
+      if (!activeFriend) return;
+      const ref = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
+      if (isFriendBlockedByMe) {
+        await ref.set(false);
+        alert('User unblocked.');
+      } else {
+        if (confirm('Block ' + activeFriend.username + '?')) {
+          await ref.set(true);
+          alert('User blocked.');
+        }
+      }
+      viewFriendProfile();
     }
 
     function openChat(friend) {
       activeFriend = friend;
       document.getElementById('emojiPicker').classList.remove('active');
-
       document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
-      const chatPanel = document.getElementById('chatPanel');
-      chatPanel.classList.add('active');
+      document.getElementById('chatPanel').classList.add('active');
 
       document.getElementById('emptyPlaceholder').style.display = 'none';
       document.getElementById('chatHeader').style.display = 'flex';
@@ -1701,56 +1590,41 @@
       if (activeChatListener) activeChatListener.off();
 
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      const chatRef = db.ref('messages/' + chatId);
+      
+      db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code).on('value', snap => { isFriendBlockedByMe = snap.val() === true; });
+      db.ref('blocked/' + activeFriend.user_code + '/' + currentUser.user_code).on('value', snap => { amIBlockedByFriend = snap.val() === true; });
 
+      const chatRef = db.ref('messages/' + chatId);
       activeChatListener = chatRef;
       activeChatListener.on('child_added', (snapshot) => {
         const msg = snapshot.val();
         renderBubble(snapshot.key, msg);
-
         if (String(msg.sender_code).trim() !== String(currentUser.user_code).trim()) {
-          if (!msg.status || msg.status !== 'seen') {
-            chatRef.child(snapshot.key).update({ status: 'seen' });
-          }
+          if (!msg.status || msg.status !== 'seen') chatRef.child(snapshot.key).update({ status: 'seen' });
           playAudioTone('receive');
-          dispatchWebNotification(friend.username, msg.message || "Sent an attachment");
+          dispatchWebNotification(friend.username, msg.message || "Attachment");
         }
       });
 
-      chatRef.on('child_changed', (snapshot) => {
-        updateBubbleUI(snapshot.key, snapshot.val());
-      });
+      chatRef.on('child_changed', (snapshot) => { updateBubbleUI(snapshot.key, snapshot.val()); });
 
-      // Pinned messages
       db.ref('pinned/' + chatId).on('value', (snap) => {
         const pin = snap.val();
         const banner = document.getElementById('pinnedBanner');
-        if (pin && pin.text) {
-          document.getElementById('pinnedText').innerText = pin.text;
-          banner.classList.add('active');
-        } else {
-          banner.classList.remove('active');
-        }
+        if (pin && pin.text) { document.getElementById('pinnedText').innerText = pin.text; banner.classList.add('active'); }
+        else banner.classList.remove('active');
       });
 
-      // Typing listener
       db.ref('typing/' + chatId + '/' + activeFriend.user_code).on('value', (snap) => {
-        const isTyping = snap.val() === true;
-        document.getElementById('typingBox').classList.toggle('active', isTyping);
+        document.getElementById('typingBox').classList.toggle('active', snap.val() === true);
       });
 
-      // Status & Last Seen
       db.ref('status/' + activeFriend.user_code).on('value', (snap) => {
         const val = snap.val();
         const dot = document.getElementById('chatPartnerOnlineDot');
         const statusText = document.getElementById('chatPartnerStatus');
-        if (val && val.state === 'online') {
-          dot.classList.add('active');
-          statusText.innerText = 'Online';
-        } else {
-          dot.classList.remove('active');
-          statusText.innerText = val ? formatLastSeen(val.last_seen) : 'Offline';
-        }
+        if (val && val.state === 'online') { dot.classList.add('active'); statusText.innerText = 'Online'; }
+        else { dot.classList.remove('active'); statusText.innerText = val ? formatLastSeen(val.last_seen) : 'Offline'; }
       });
     }
 
@@ -1768,84 +1642,47 @@
       return escaped;
     }
 
-    // ================= GOOGLE DRIVE FILE UPLOAD =================
+    // FILE UPLOAD TO GOOGLE DRIVE
     function handleFileSelected(event, fileType) {
       const attachMenu = document.getElementById('attachMenu');
       if (attachMenu) attachMenu.classList.remove('active');
-      
       const file = event.target.files[0];
       if (!file || !activeFriend) return;
-      
-      const maxSizeMB = 50;
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        alert(`File is too large! Maximum limit is ${maxSizeMB}MB`);
-        return;
-      }
 
       const progressBar = document.getElementById('uploadProgressBar');
       const progressContainer = document.getElementById('uploadProgressContainer');
       const sendBtn = document.getElementById('sendBtn');
       
       progressContainer.style.display = 'block';
-      progressBar.style.width = '10%';
+      progressBar.style.width = '20%';
       sendBtn.disabled = true;
 
       const reader = new FileReader();
       reader.onload = async function(evt) {
-        progressBar.style.width = '50%';
+        progressBar.style.width = '60%';
         const base64Data = evt.target.result.split(',')[1];
-        
         try {
-          progressBar.style.width = '80%';
           const response = await fetch(GOOGLE_SHEET_URL, {
             method: 'POST',
-            body: new URLSearchParams({
-              action: 'upload_file',
-              fileName: file.name,
-              mimeType: file.type,
-              base64: base64Data
-            })
+            body: new URLSearchParams({ action: 'upload_file', fileName: file.name, mimeType: file.type, base64: base64Data })
           });
-          
           const result = await response.json();
           progressBar.style.width = '100%';
-          
           if (result.success) {
             const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-            const timeStr = new Date().getTime();
-            
-            let messagePayload = {
-              sender_code: currentUser.user_code,
-              timestamp: timeStr,
-              status: 'sent',
-              file_name: file.name,
-              file_url: result.fileUrl
-            };
-
-            if (fileType === 'media' && file.type.startsWith('image/')) {
-               messagePayload.image = result.fileUrl; 
-            } else {
-               messagePayload.document = true;
-            }
+            let messagePayload = { sender_code: currentUser.user_code, timestamp: new Date().getTime(), status: 'sent', file_name: file.name, file_url: result.fileUrl };
+            if (fileType === 'media' && file.type.startsWith('image/')) messagePayload.image = result.fileUrl;
+            else messagePayload.document = true;
 
             playAudioTone('send');
             await db.ref('messages/' + chatId).push(messagePayload);
-          } else {
-            alert('Error uploading file to Drive.');
-          }
-        } catch(e) {
-          alert('Upload failed due to connection error.');
-        } finally {
-          progressContainer.style.display = 'none';
-          progressBar.style.width = '0%';
-          sendBtn.disabled = false;
-          event.target.value = '';
-        }
+          } else { alert('Upload error'); }
+        } catch(e) { alert('Upload failed'); }
+        finally { progressContainer.style.display = 'none'; progressBar.style.width = '0%'; sendBtn.disabled = false; event.target.value = ''; }
       };
       reader.readAsDataURL(file);
     }
 
-    // ================= BUBBLE RENDERING =================
     function formatTime(ts) {
       if (!ts) return '';
       const d = new Date(ts);
@@ -1855,34 +1692,15 @@
     function renderBubble(key, msg) {
       const chatBody = document.getElementById('chatBody');
       const isOutgoing = String(msg.sender_code).trim() === String(currentUser.user_code).trim();
-
       const row = document.createElement('div');
       row.className = `bubble-row ${isOutgoing ? 'outgoing' : 'incoming'}`;
       row.id = `row_${key}`;
 
-      let quoteHtml = '';
-      if (msg.reply_to) {
-        quoteHtml = `<div class="quoted-box"><strong>${escapeHtml(msg.reply_to.sender)}:</strong> ${escapeHtml(msg.reply_to.text)}</div>`;
-      }
-
+      let quoteHtml = msg.reply_to ? `<div class="quoted-box"><strong>${escapeHtml(msg.reply_to.sender)}:</strong> ${escapeHtml(msg.reply_to.text)}</div>` : '';
       let contentHtml = '';
-      if (msg.image) {
-        contentHtml = `<img src="${msg.image}" class="bubble-img" onclick="openImageModal('${msg.image}')" alt="Attachment" />`;
-      } 
-      else if (msg.document) {
-        contentHtml = `
-          <div class="file-bubble" onclick="window.open('${msg.file_url}', '_blank')">
-            <span class="icon" style="font-size:1.8rem; margin-right:8px;">📄</span>
-            <div class="details" style="display:flex; flex-direction:column;">
-              <span style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${msg.file_name || 'Document'}</span>
-              <small style="font-size: 0.7rem; opacity: 0.8;">Click to view</small>
-            </div>
-          </div>
-        `;
-      }
-      else if (msg.audio) {
-        contentHtml = `<audio controls src="${msg.audio}" style="max-width: 200px; height: 36px;"></audio>`;
-      } 
+      if (msg.image) contentHtml = `<img src="${msg.image}" class="bubble-img" onclick="openImageModal('${msg.image}')" alt="Img" />`;
+      else if (msg.document) contentHtml = `<div class="file-bubble" onclick="window.open('${msg.file_url}', '_blank')"><span class="icon">📄</span><div class="details"><span>${msg.file_name || 'Document'}</span><small>Click to view</small></div></div>`;
+      else if (msg.audio) contentHtml = `<audio controls src="${msg.audio}" style="max-width:200px;height:36px;"></audio>`;
       else {
         let txt = String(msg.message).replace(/</g, "&lt;");
         txt = txt.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
@@ -1892,9 +1710,7 @@
       let tick = '';
       if (isOutgoing) {
         const s = msg.status || 'sent';
-        if (s === 'seen') tick = `<span class="status-tick seen">✓✓</span>`;
-        else if (s === 'delivered') tick = `<span class="status-tick" style="color:var(--text-muted)">✓✓</span>`;
-        else tick = `<span class="status-tick" style="color:var(--text-muted)">✓</span>`;
+        tick = `<span class="status-tick ${s === 'seen' ? 'seen' : ''}">${s === 'seen' ? '✓✓' : '✓'}</span>`;
       }
 
       row.innerHTML = `
@@ -1903,288 +1719,133 @@
           ${quoteHtml}
           <div id="content_${key}">${contentHtml}</div>
         </div>
-        <div class="reactions-badge" id="reactions_${key}" style="${msg.reactions ? '' : 'display:none;'}">
-          ${msg.reactions ? Object.values(msg.reactions).join(' ') : ''}
-        </div>
-        <div class="bubble-meta">
-          <span>${formatTime(msg.timestamp)}</span>
-          ${msg.edited ? '<span style="font-size:0.6rem;">(edited)</span>' : ''}
-          ${tick}
-        </div>
+        <div class="reactions-badge" id="reactions_${key}" style="${msg.reactions ? '' : 'display:none;'}">${msg.reactions ? Object.values(msg.reactions).join(' ') : ''}</div>
+        <div class="bubble-meta"><span>${formatTime(msg.timestamp)}</span>${msg.edited ? '(edited)' : ''} ${tick}</div>
       `;
-
       chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
-
       bindSwipeAndTap(row, key, isOutgoing, msg);
     }
 
     function bindSwipeAndTap(row, key, isOutgoing, msg) {
       const bubble = row.querySelector('.bubble');
-      let startX = 0;
-      let currentX = 0;
-      let pressTimer = null;
-
-      // Right Click
-      bubble.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        openWaContextMenu(e, key, isOutgoing, msg);
-      });
-
-      // Tap / Click
+      bubble.addEventListener('contextmenu', (e) => { e.preventDefault(); openWaContextMenu(e, key, isOutgoing, msg); });
       bubble.addEventListener('click', (e) => {
         if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
         e.stopPropagation();
         openWaContextMenu(e, key, isOutgoing, msg);
-      });
-
-      // Long Press for Mobile
-      row.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
-        startX = e.touches[0].clientX;
-        pressTimer = setTimeout(() => {
-          if (navigator.vibrate) navigator.vibrate(40);
-          openWaContextMenu(e.touches[0], key, isOutgoing, msg);
-        }, 450);
-      }, { passive: true });
-
-      row.addEventListener('touchmove', (e) => {
-        clearTimeout(pressTimer);
-        currentX = e.touches[0].clientX;
-        const diffX = currentX - startX;
-
-        if (diffX > 20 && diffX < 85) {
-          row.style.transform = `translateX(${diffX}px)`;
-          const hint = document.getElementById(`hint_${key}`);
-          if (hint) hint.style.opacity = diffX / 75;
-        }
-      }, { passive: true });
-
-      row.addEventListener('touchend', () => {
-        clearTimeout(pressTimer);
-        const diffX = currentX - startX;
-        if (diffX > 55) {
-          triggerReply(key);
-        }
-        row.style.transform = 'translateX(0)';
-        const hint = document.getElementById(`hint_${key}`);
-        if (hint) hint.style.opacity = 0;
-        startX = 0;
-        currentX = 0;
       });
     }
 
     function updateBubbleUI(key, msg) {
       const row = document.getElementById(`row_${key}`);
       if (!row) return;
-
-      if (msg.deleted) {
-        const bubble = document.getElementById(`bubble_${key}`);
-        bubble.innerHTML = `<em style="color:var(--text-muted); font-size:0.8rem;">This message was deleted</em>`;
-        return;
-      }
-
+      if (msg.deleted) { document.getElementById(`bubble_${key}`).innerHTML = `<em style="color:var(--text-muted); font-size:0.8rem;">This message was deleted</em>`; return; }
       const contentEl = document.getElementById(`content_${key}`);
       if (contentEl && !msg.audio && !msg.image && !msg.document) {
-        let txt = String(msg.message).replace(/</g, "&lt;");
-        txt = txt.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-        contentEl.innerHTML = parseFormattedText(txt);
+        contentEl.innerHTML = parseFormattedText(msg.message);
       }
-
       const reactBadge = document.getElementById(`reactions_${key}`);
-      if (reactBadge) {
-        if (msg.reactions) {
-          reactBadge.innerText = Object.values(msg.reactions).join(' ');
-          reactBadge.style.display = 'flex';
-        } else {
-          reactBadge.style.display = 'none';
-        }
-      }
-
-      if (String(msg.sender_code).trim() === String(currentUser.user_code).trim()) {
-        const tick = row.querySelector('.status-tick');
-        if (tick) {
-          const s = msg.status || 'sent';
-          if (s === 'seen') {
-            tick.className = 'status-tick seen';
-            tick.innerText = '✓✓';
-          } else if (s === 'delivered') {
-            tick.className = 'status-tick';
-            tick.innerText = '✓✓';
-          }
-        }
-      }
+      if (reactBadge && msg.reactions) { reactBadge.innerText = Object.values(msg.reactions).join(' '); reactBadge.style.display = 'flex'; }
     }
 
-    // ================= WHATSAPP STYLE CONTEXT MENU LOGIC =================
     function openWaContextMenu(e, msgId, isOutgoing, msg) {
       selectedMsgId = msgId;
       selectedMsgText = msg ? (msg.message || "[Attachment]") : "";
-
       const menu = document.getElementById('waContextMenu');
       document.getElementById('menuEditOption').style.display = isOutgoing && !msg.image && !msg.audio && !msg.document ? 'flex' : 'none';
       document.getElementById('menuDeleteOption').style.display = isOutgoing ? 'flex' : 'none';
-
       menu.style.display = 'flex';
-
-      const menuW = 210;
-      const menuH = isOutgoing ? 290 : 210;
-
-      let clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth / 2;
-      let clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight / 2;
-
-      // Smart boundary protection: Never cuts off screen
-      if (clientX + menuW > window.innerWidth - 12) {
-        clientX = window.innerWidth - menuW - 14;
-      }
-      if (clientX < 12) clientX = 12;
-
-      if (clientY + menuH > window.innerHeight - 12) {
-        clientY = window.innerHeight - menuH - 16;
-      }
-      if (clientY < 12) clientY = 12;
-
-      menu.style.left = clientX + 'px';
-      menu.style.top = clientY + 'px';
+      menu.style.left = Math.min(e.clientX || 100, window.innerWidth - 220) + 'px';
+      menu.style.top = Math.min(e.clientY || 100, window.innerHeight - 300) + 'px';
     }
 
-    document.body.onclick = () => {
-      document.getElementById('waContextMenu').style.display = 'none';
-    };
+    document.body.onclick = () => { document.getElementById('waContextMenu').style.display = 'none'; };
 
     async function reactToMessage(emoji) {
       if (!selectedMsgId || !activeFriend) return;
-      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      await db.ref(`messages/${chatId}/${selectedMsgId}/reactions/${currentUser.user_code}`).set(emoji);
-      document.getElementById('waContextMenu').style.display = 'none';
+      await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}/reactions/${currentUser.user_code}`).set(emoji);
     }
 
-    function triggerReplyFromMenu() {
-      if (selectedMsgId) triggerReply(selectedMsgId);
-      document.getElementById('waContextMenu').style.display = 'none';
-    }
-
+    function triggerReplyFromMenu() { if (selectedMsgId) triggerReply(selectedMsgId); }
     function triggerReply(msgId) {
       const bubble = document.getElementById(`content_${msgId}`);
-      replyingToMsg = {
-        sender: activeFriend ? activeFriend.username : 'User',
-        text: bubble ? bubble.innerText.substring(0, 40) : 'Message'
-      };
+      replyingToMsg = { sender: activeFriend ? activeFriend.username : 'User', text: bubble ? bubble.innerText.substring(0, 40) : 'Message' };
       document.getElementById('replyPreviewText').innerText = replyingToMsg.text;
       document.getElementById('replyPreviewBar').classList.add('active');
-      document.getElementById('chatMessageInput').focus();
     }
-    function cancelReply() {
-      replyingToMsg = null;
-      document.getElementById('replyPreviewBar').classList.remove('active');
-    }
+    function cancelReply() { replyingToMsg = null; document.getElementById('replyPreviewBar').classList.remove('active'); }
 
     function copyActiveMessage() {
       if (!selectedMsgId) return;
-      const bubble = document.getElementById(`content_${selectedMsgId}`);
-      if (bubble) {
-        navigator.clipboard.writeText(bubble.innerText);
-        alert("Message copied!");
-      }
-      document.getElementById('waContextMenu').style.display = 'none';
+      const b = document.getElementById(`content_${selectedMsgId}`);
+      if (b) { navigator.clipboard.writeText(b.innerText); alert("Copied!"); }
     }
 
-    // Forward Message
     function openForwardModal() {
       document.getElementById('waContextMenu').style.display = 'none';
       const container = document.getElementById('forwardFriendsList');
       container.innerHTML = '';
-
-      if (!cachedFriends || cachedFriends.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No other friends.</p>';
-      } else {
-        cachedFriends.forEach(f => {
-          const item = document.createElement('div');
-          item.className = 'list-item';
-          item.style.padding = '8px 12px';
-          item.onclick = () => forwardToFriend(f);
-          item.innerHTML = `
-            <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(f.username)}</div>
-            <button class="btn btn-primary" style="padding: 4px 10px; font-size:0.75rem;">Send</button>
-          `;
-          container.appendChild(item);
-        });
-      }
+      if (!cachedFriends.length) container.innerHTML = 'No friends';
+      cachedFriends.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.style.padding = '8px 12px';
+        item.onclick = () => forwardToFriend(f);
+        item.innerHTML = `<strong>${escapeHtml(f.username)}</strong><button class="btn btn-primary" style="padding:4px 10px;font-size:0.75rem;">Send</button>`;
+        container.appendChild(item);
+      });
       document.getElementById('forwardModal').style.display = 'flex';
     }
-    function closeForwardModal() {
-      document.getElementById('forwardModal').style.display = 'none';
-    }
+    function closeForwardModal() { document.getElementById('forwardModal').style.display = 'none'; }
 
-    async function forwardToFriend(targetFriend) {
+    async function forwardToFriend(target) {
       if (!selectedMsgText) return;
-      const forwardChatId = getChatId(currentUser.user_code, targetFriend.user_code);
-      const timeStr = new Date().getTime();
-
-      await db.ref('messages/' + forwardChatId).push({
-        sender_code: currentUser.user_code,
-        message: selectedMsgText,
-        timestamp: timeStr,
-        status: 'sent'
-      });
-      alert(`Forwarded to ${targetFriend.username}!`);
+      await db.ref('messages/' + getChatId(currentUser.user_code, target.user_code)).push({ sender_code: currentUser.user_code, message: selectedMsgText, timestamp: new Date().getTime(), status: 'sent' });
+      alert('Forwarded!');
       closeForwardModal();
     }
 
     async function pinActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
-      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      const bubble = document.getElementById(`content_${selectedMsgId}`);
-      await db.ref('pinned/' + chatId).set({ text: bubble.innerText });
-      document.getElementById('waContextMenu').style.display = 'none';
+      await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).set({ text: document.getElementById(`content_${selectedMsgId}`).innerText });
     }
-    async function unpinMessage() {
-      if (!activeFriend) return;
-      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      await db.ref('pinned/' + chatId).remove();
-    }
+    async function unpinMessage() { if (activeFriend) await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).remove(); }
 
     async function editActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
-      const bubble = document.getElementById(`content_${selectedMsgId}`);
-      const newText = prompt('Edit your message:', bubble.innerText);
-      if (newText && newText.trim()) {
-        const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-        await db.ref(`messages/${chatId}/${selectedMsgId}`).update({
-          message: newText.trim(),
-          edited: true
-        });
-      }
-      document.getElementById('waContextMenu').style.display = 'none';
+      const t = prompt('Edit message:', document.getElementById(`content_${selectedMsgId}`).innerText);
+      if (t && t.trim()) await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ message: t.trim(), edited: true });
     }
 
     async function deleteActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
-      if (confirm('Delete this message for everyone?')) {
-        const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-        await db.ref(`messages/${chatId}/${selectedMsgId}`).update({
-          deleted: true,
-          message: '',
-          image: null,
-          audio: null,
-          document: null,
-          file_url: null,
-          file_name: null
-        });
+      if (confirm('Delete for everyone?')) {
+        await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ deleted: true, message: '', image: null, audio: null, document: null });
       }
-      document.getElementById('waContextMenu').style.display = 'none';
     }
 
-    // ================= SENDING MESSAGES =================
+    function compressImage(src, maxW, maxH, q, cb) {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        cb(canvas.toDataURL('image/jpeg', q));
+      };
+    }
+
+    function openImageModal(src) { document.getElementById('imageModalImg').src = src; document.getElementById('imageModal').style.display = 'flex'; }
+
     function handleTypingEvent() {
       if (!activeFriend) return;
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       db.ref('typing/' + chatId + '/' + currentUser.user_code).set(true);
-
       clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false);
-      }, 1500);
+      typingTimeout = setTimeout(() => db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false), 1500);
     }
 
     async function handleSendMessage(event) {
@@ -2193,75 +1854,41 @@
       const text = input.value.trim();
       if (!text || !activeFriend) return;
 
-      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      const timeStr = new Date().getTime();
+      if (isFriendBlockedByMe) { alert("You blocked this user."); return; }
+      if (amIBlockedByFriend) { alert("Message could not be sent."); return; }
 
+      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+      const ts = new Date().getTime();
       input.value = '';
       document.getElementById('emojiPicker').classList.remove('active');
-      db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false);
 
-      const payload = {
-        sender_code: currentUser.user_code,
-        message: text,
-        timestamp: timeStr,
-        status: 'sent'
-      };
-
-      if (replyingToMsg) {
-        payload.reply_to = replyingToMsg;
-        cancelReply();
-      }
+      const payload = { sender_code: currentUser.user_code, message: text, timestamp: ts, status: 'sent' };
+      if (replyingToMsg) { payload.reply_to = replyingToMsg; cancelReply(); }
 
       playAudioTone('send');
       await db.ref('messages/' + chatId).push(payload);
-
-      backupToGoogleSheet({
-        action: 'send_message',
-        chat_id: chatId,
-        sender_code: currentUser.user_code,
-        message: text,
-        timestamp: timeStr
-      });
+      backupToGoogleSheet({ action: 'send_message', chat_id: chatId, sender_code: currentUser.user_code, message: text });
     }
 
     async function toggleVoiceRecording() {
       const micBtn = document.getElementById('micBtn');
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        micBtn.classList.remove('recording');
-        return;
-      }
-
+      if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); micBtn.classList.remove('recording'); return; }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-
         mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
         mediaRecorder.onstop = async () => {
-          const blob = new Blob(audioChunks, { type: 'audio/webm' });
           const reader = new FileReader();
-          reader.readAsDataURL(blob);
+          reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
           reader.onloadend = async () => {
-            const base64Audio = reader.result;
-            const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-            const timeStr = new Date().getTime();
-
             playAudioTone('send');
-            await db.ref('messages/' + chatId).push({
-              sender_code: currentUser.user_code,
-              audio: base64Audio,
-              timestamp: timeStr,
-              status: 'sent'
-            });
+            await db.ref('messages/' + getChatId(currentUser.user_code, activeFriend.user_code)).push({ sender_code: currentUser.user_code, audio: reader.result, timestamp: new Date().getTime(), status: 'sent' });
           };
         };
-
         mediaRecorder.start();
         micBtn.classList.add('recording');
-      } catch (err) {
-        alert('Microphone access denied.');
-      }
+      } catch (err) { alert('Mic access denied'); }
     }
 
     function escapeHtml(str) {
