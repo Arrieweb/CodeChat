@@ -1235,7 +1235,7 @@
           <button class="icon-btn" onclick="openAddFriendModal()" title="Add Friend">
             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
           </button>
-          <button class="icon-btn" onclick="toggleMainMenu()" title="Menu">
+          <button class="icon-btn" id="mainMenuBtn" onclick="toggleMainMenu()" title="Menu">
             <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
             <div class="notification-dot" id="requestsDot" style="top: 2px; right: 4px;"></div>
           </button>
@@ -1411,8 +1411,9 @@
   <!-- 3. POPUPS, MENUS AND MODALS                -->
   <!-- ========================================== -->
   
-  <!-- Single Message Context Menu -->
+  <!-- CONTEXT MENU (The Container that appears on Hold) -->
   <div class="wa-context-menu" id="waContextMenu">
+    <!-- Reactions -->
     <div class="wa-react-bar">
       <span onclick="reactToMessage('❤️')">❤️</span>
       <span onclick="reactToMessage('😂')">😂</span>
@@ -1424,39 +1425,31 @@
       </span>
     </div>
     
-    <div class="wa-menu-item" onclick="enterSelectionMode()">
-      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-      <span>Select Messages</span>
-    </div>
-    
-    <div class="wa-menu-item" onclick="toggleStarActiveMessage()">
-      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-      <span id="ctxMenuStarText">Star</span>
-    </div>
-    
+    <!-- Menu Options -->
     <div class="wa-menu-item" onclick="triggerReplyFromMenu()">
       <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
       <span>Reply</span>
     </div>
-    
+
     <div class="wa-menu-item" onclick="copyActiveMessage()">
       <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       <span>Copy</span>
     </div>
-    
+
     <div class="wa-menu-item" onclick="openForwardModal()">
       <svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
       <span>Forward</span>
     </div>
-    
-    <div class="wa-menu-item" onclick="pinActiveMessage()">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
-      <span>Pin</span>
+
+    <div class="wa-menu-item" onclick="toggleStarActiveMessage()">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <span id="ctxMenuStarText">Star Message</span>
     </div>
-    
-    <div class="wa-menu-item" id="menuEditOption" onclick="editActiveMessage()">
-      <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-      <span>Edit</span>
+
+    <!-- This option will let them select multiple messages to bulk delete/forward -->
+    <div class="wa-menu-item" onclick="enterSelectionMode()">
+      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span>Select Messages</span>
     </div>
     
     <div class="wa-menu-item danger" onclick="deleteForMeActiveMessage()">
@@ -1467,15 +1460,6 @@
     <div class="wa-menu-item danger" id="menuDeleteOption" onclick="deleteActiveMessage()">
       <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
       <span>Delete for Everyone</span>
-    </div>
-  </div>
-
-  <!-- Forward Modal -->
-  <div class="dialog-overlay" id="forwardModal">
-    <div class="dialog-card">
-      <h3 style="font-size: 1.05rem;" id="forwardTitle">Forward message to...</h3>
-      <div id="forwardFriendsList" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
-      <button class="btn btn-secondary" onclick="closeForwardModal()">Cancel</button>
     </div>
   </div>
 
@@ -1752,11 +1736,7 @@
     }
     
     document.addEventListener('click', (e) => { 
-      if (!e.target.closest('#mainAppMenu') && !e.target.closest('[onclick="toggleMainMenu()"]')) { 
-        const m = document.getElementById('mainAppMenu'); 
-        if (m) m.style.display = 'none'; 
-      } 
-    });
+  if (!e.target.closest('#mainAppMenu') && !e.target.closest('#mainMenuBtn')) {
 
     // Populate Emoji Picker
     (function populateEmojis() { 
@@ -2079,7 +2059,7 @@
     /* ========================================================= */
     /* 24. FRIEND MANAGEMENT & REQUESTS                          */
     /* ========================================================= */
-    function renderFriendsUI(friendsArray) {
+   function renderFriendsUI(friendsArray) {
       const container = document.getElementById('friendsList');
       if (friendsArray.length === 0) { 
         container.innerHTML = `<div style="text-align: center; color: var(--text-muted); margin-top: 50px;">No chats found.</div>`; 
@@ -2094,19 +2074,68 @@
         item.onclick = () => openChat({ user_code: code, username: info.username, photoUrl: info.photoUrl });
         
         item.innerHTML = `
-          <div style="display: flex; align-items: center; min-width: 0;">
+          <div style="display: flex; align-items: center; min-width: 0; width: 100%;">
             <div class="avatar-wrapper">
               <div class="avatar" id="avatar_${code}"></div>
               <div class="online-badge" id="badge_${code}"></div>
             </div>
             <div class="item-meta">
-              <span class="title">${escapeHtml(info.username)}</span>
-              <span class="subtitle">Code: ${code}</span>
+              <span class="title" style="display:flex; justify-content:space-between;">
+                ${escapeHtml(info.username)}
+                <span class="unread-badge" id="unread_${code}" style="display:none;">0</span>
+              </span>
+              <span class="subtitle" id="subtitle_${code}">Tap to chat</span>
             </div>
           </div>
-          <span class="unread-badge" id="unread_${code}">0</span>
         `;
         container.appendChild(item);
+        
+        renderAvatar(document.getElementById(`avatar_${code}`), info.username, info.photoUrl);
+        
+        db.ref('status/' + code).on('value', (s) => { 
+          const b = document.getElementById(`badge_${code}`); 
+          if (b) b.classList.toggle('active', s.val() && s.val().state === 'online'); 
+        });
+        
+        // Unread Badge & Message Preview Logic
+        const chatId = getChatId(currentUser.user_code, code);
+        db.ref('messages/' + chatId).on('value', (s) => {
+          const msgs = s.val() || {}; 
+          let unread = 0;
+          let lastMsgText = "Tap to chat";
+          let lastMsgTime = 0;
+
+          for (let mId in msgs) {
+            const m = msgs[mId];
+            
+            // Preview logic
+            if (m.timestamp > lastMsgTime) {
+              lastMsgTime = m.timestamp;
+              if (m.deleted) lastMsgText = "🚫 Message deleted";
+              else if (m.image) lastMsgText = "📷 Photo";
+              else if (m.document) lastMsgText = "📄 Document";
+              else if (m.audio) lastMsgText = "🎤 Voice Note";
+              else lastMsgText = m.message;
+            }
+
+            // Unread count logic
+            if (m.sender_code === code) {
+              if (m.status !== 'seen') unread++;
+              if (m.status === 'sent') db.ref(`messages/${chatId}/${mId}`).update({ status: 'delivered' });
+            }
+          }
+          
+          const subtitleEl = document.getElementById(`subtitle_${code}`);
+          if (subtitleEl) subtitleEl.innerText = lastMsgText;
+
+          const badgeEl = document.getElementById(`unread_${code}`);
+          if (badgeEl) { 
+            badgeEl.innerText = unread; 
+            badgeEl.style.display = unread > 0 ? 'inline-block' : 'none'; 
+          }
+        });
+      });
+    }
         
         // Render Avatar
         renderAvatar(document.getElementById(`avatar_${code}`), info.username, info.photoUrl);
@@ -2509,7 +2538,7 @@
           }
         });
         
-        chatRef.once('value', () => { isInitialLoad = false; }); 
+        chatRef.once('value', () => { isInitialLoad = false; setTimeout(scrollToBottom, 250); }); 
         
         // Listen for edits, reactions, deletions
         chatRef.on('child_changed', (snapshot) => { 
@@ -2676,7 +2705,7 @@
           const matched = imgUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
           if (matched && matched[1]) imgUrl = "https://lh3.googleusercontent.com/d/" + matched[1];
         }
-        contentHtml = `<img src="${imgUrl}" class="bubble-img" onclick="if(!isSelectionMode) openImageModal('${imgUrl}')" alt="Photo" loading="lazy" />`;
+        contentHtml = `<img src="${imgUrl}" class="bubble-img" onclick="event.stopPropagation(); openImageModal('${imgUrl}')" alt="Photo" loading="lazy" />`;
       }
       else if (msg.document) {
         contentHtml = `
@@ -2739,18 +2768,52 @@
       const bubble = row.querySelector('.bubble');
       let startX = 0; let currentX = 0; let pressTimer = null;
 
+      // 1. Desktop Right Click
       bubble.addEventListener('contextmenu', (e) => { 
         e.preventDefault(); 
         if (isSelectionMode) { toggleMessageSelection(key); return; } 
         openWaContextMenu(e, key, isOutgoing, msg); 
       });
       
+      // 2. Desktop / Mobile Single Tap
       bubble.addEventListener('click', (e) => {
-        if (isSelectionMode) { toggleMessageSelection(key); return; }
         if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
         e.stopPropagation(); 
+        if (isSelectionMode) { toggleMessageSelection(key); return; }
         openWaContextMenu(e, key, isOutgoing, msg);
       });
+
+      // 3. Mobile Long Press (Hold)
+      row.addEventListener('touchstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
+        startX = e.touches[0].clientX;
+        pressTimer = setTimeout(() => { 
+          if (navigator.vibrate) navigator.vibrate(40); 
+          if (isSelectionMode) { toggleMessageSelection(key); }
+          else { openWaContextMenu(e.touches[0], key, isOutgoing, msg); } // Opens menu instead of selecting!
+        }, 500);
+      }, { passive: true });
+
+      row.addEventListener('touchmove', (e) => {
+        clearTimeout(pressTimer); 
+        currentX = e.touches[0].clientX; 
+        const diffX = currentX - startX;
+        if (!isSelectionMode && diffX > 15 && diffX < 85) { 
+          row.querySelector('.bubble-wrap').style.transform = `translateX(${diffX}px)`; 
+          const hint = document.getElementById(`hint_${key}`); 
+          if (hint) hint.style.opacity = diffX / 75; 
+        }
+      }, { passive: true });
+
+      row.addEventListener('touchend', () => {
+        clearTimeout(pressTimer); 
+        if (!isSelectionMode && currentX - startX > 55) triggerReply(key);
+        row.querySelector('.bubble-wrap').style.transform = 'translateX(0)';
+        const hint = document.getElementById(`hint_${key}`); 
+        if (hint) hint.style.opacity = 0; 
+        startX = 0; currentX = 0;
+      });
+    }
 
       // Swipe to Reply & Long Press
       row.addEventListener('touchstart', (e) => {
