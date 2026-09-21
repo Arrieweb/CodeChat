@@ -892,6 +892,7 @@
       <span onclick="reactToMessage('👍')">👍</span>
       <span onclick="reactToMessage('🔥')">🔥</span>
       <span onclick="reactToMessage('😮')">😮</span>
+      <span onclick="openCustomReactionPicker()">➕</span>
     </div>
 
     <div class="wa-menu-item" onclick="triggerReplyFromMenu()">
@@ -1039,6 +1040,17 @@
     let audioChunks = [];
     let isFriendBlockedByMe = false;
     let amIBlockedByFriend = false;
+    let reactionMode = false; // Used for custom reactions
+
+    // Android Gesture Navigation / Back Button Fix
+    window.addEventListener('popstate', (e) => {
+      if (document.getElementById('chatPanel').classList.contains('active')) {
+        closeChatMobile(null, true);
+      }
+      document.querySelectorAll('.dialog-overlay').forEach(el => el.style.display = 'none');
+      document.getElementById('waContextMenu').style.display = 'none';
+      document.getElementById('emojiPicker').classList.remove('active');
+    });
 
     const EMOJIS = [
       "😀","😃","😄","😁","😆","😅","😂","🤣","🥲","☺️","😊","😇","🙂","🙃","😉","😌",
@@ -1126,14 +1138,20 @@
     })();
 
     function toggleEmojiPicker() {
+      reactionMode = false;
       const picker = document.getElementById('emojiPicker');
       picker.classList.toggle('active');
     }
 
     function insertEmoji(char) {
-      const input = document.getElementById('chatMessageInput');
-      input.value += char;
-      input.focus();
+      if (reactionMode) {
+        reactToMessage(char);
+        reactionMode = false;
+      } else {
+        const input = document.getElementById('chatMessageInput');
+        input.value += char;
+        input.focus();
+      }
     }
 
     function toggleAttachMenu() {
@@ -1575,6 +1593,9 @@
       document.getElementById('emojiPicker').classList.remove('active');
       document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
       document.getElementById('chatPanel').classList.add('active');
+      
+      // Fix for Gesture Navigation: Push state when chat is opened
+      history.pushState({ chatOpen: true }, "", "#chat");
 
       document.getElementById('emptyPlaceholder').style.display = 'none';
       document.getElementById('chatHeader').style.display = 'flex';
@@ -1595,16 +1616,24 @@
       db.ref('blocked/' + activeFriend.user_code + '/' + currentUser.user_code).on('value', snap => { amIBlockedByFriend = snap.val() === true; });
 
       const chatRef = db.ref('messages/' + chatId);
+      
+      let isInitialLoad = true;
       activeChatListener = chatRef;
+      
       activeChatListener.on('child_added', (snapshot) => {
         const msg = snapshot.val();
         renderBubble(snapshot.key, msg);
         if (String(msg.sender_code).trim() !== String(currentUser.user_code).trim()) {
           if (!msg.status || msg.status !== 'seen') chatRef.child(snapshot.key).update({ status: 'seen' });
-          playAudioTone('receive');
-          dispatchWebNotification(friend.username, msg.message || "Attachment");
+          // SFX & Notification sirf naye messages par, purane load hone par nahi
+          if (!isInitialLoad) {
+             playAudioTone('receive');
+             dispatchWebNotification(friend.username, msg.message || "Attachment");
+          }
         }
       });
+      // Iske baad child_added synchronously purane data load kar chuka hoga
+      isInitialLoad = false;
 
       chatRef.on('child_changed', (snapshot) => { updateBubbleUI(snapshot.key, snapshot.val()); });
 
@@ -1628,11 +1657,14 @@
       });
     }
 
-    function closeChatMobile(e) {
+    function closeChatMobile(e, fromPopstate = false) {
       if (e) e.stopPropagation();
       activeFriend = null;
       if (activeChatListener) activeChatListener.off();
       document.getElementById('chatPanel').classList.remove('active');
+      if (!fromPopstate) {
+        history.back(); // Remove #chat state if closed via back button on UI
+      }
     }
 
     function parseFormattedText(text) {
@@ -1642,7 +1674,7 @@
       return escaped;
     }
 
-    // FILE UPLOAD TO GOOGLE DRIVE
+    // FILE UPLOAD TO GOOGLE DRIVE (Fixed CORS & Large Base64 Issue)
     function handleFileSelected(event, fileType) {
       const attachMenu = document.getElementById('attachMenu');
       if (attachMenu) attachMenu.classList.remove('active');
@@ -1661,11 +1693,16 @@
       reader.onload = async function(evt) {
         progressBar.style.width = '60%';
         const base64Data = evt.target.result.split(',')[1];
+        
         try {
+          const payload = { action: 'upload_file', fileName: file.name, mimeType: file.type, base64: base64Data };
+          
           const response = await fetch(GOOGLE_SHEET_URL, {
             method: 'POST',
-            body: new URLSearchParams({ action: 'upload_file', fileName: file.name, mimeType: file.type, base64: base64Data })
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
           });
+          
           const result = await response.json();
           progressBar.style.width = '100%';
           if (result.success) {
@@ -1676,8 +1713,8 @@
 
             playAudioTone('send');
             await db.ref('messages/' + chatId).push(messagePayload);
-          } else { alert('Upload error'); }
-        } catch(e) { alert('Upload failed'); }
+          } else { alert('Upload error: ' + (result.error || 'Unknown')); }
+        } catch(e) { alert('Upload failed. Connection error.'); }
         finally { progressContainer.style.display = 'none'; progressBar.style.width = '0%'; sendBtn.disabled = false; event.target.value = ''; }
       };
       reader.readAsDataURL(file);
@@ -1699,7 +1736,7 @@
       let quoteHtml = msg.reply_to ? `<div class="quoted-box"><strong>${escapeHtml(msg.reply_to.sender)}:</strong> ${escapeHtml(msg.reply_to.text)}</div>` : '';
       let contentHtml = '';
       if (msg.image) contentHtml = `<img src="${msg.image}" class="bubble-img" onclick="openImageModal('${msg.image}')" alt="Img" />`;
-      else if (msg.document) contentHtml = `<div class="file-bubble" onclick="window.open('${msg.file_url}', '_blank')"><span class="icon">📄</span><div class="details"><span>${msg.file_name || 'Document'}</span><small>Click to view</small></div></div>`;
+      else if (msg.document) contentHtml = `<div class="file-bubble" onclick="window.open('${msg.file_url}', '_blank')"><span class="icon" style="font-size:1.8rem; margin-right:8px;">📄</span><div class="details" style="display:flex; flex-direction:column;"><span style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${msg.file_name || 'Document'}</span><small style="font-size: 0.7rem; opacity: 0.8;">Click to view</small></div></div>`;
       else if (msg.audio) contentHtml = `<audio controls src="${msg.audio}" style="max-width:200px;height:36px;"></audio>`;
       else {
         let txt = String(msg.message).replace(/</g, "&lt;");
@@ -1720,7 +1757,7 @@
           <div id="content_${key}">${contentHtml}</div>
         </div>
         <div class="reactions-badge" id="reactions_${key}" style="${msg.reactions ? '' : 'display:none;'}">${msg.reactions ? Object.values(msg.reactions).join(' ') : ''}</div>
-        <div class="bubble-meta"><span>${formatTime(msg.timestamp)}</span>${msg.edited ? '(edited)' : ''} ${tick}</div>
+        <div class="bubble-meta"><span>${formatTime(msg.timestamp)}</span>${msg.edited ? '<span style="font-size:0.6rem;">(edited)</span>' : ''} ${tick}</div>
       `;
       chatBody.appendChild(row);
       chatBody.scrollTop = chatBody.scrollHeight;
@@ -1729,11 +1766,51 @@
 
     function bindSwipeAndTap(row, key, isOutgoing, msg) {
       const bubble = row.querySelector('.bubble');
+      let startX = 0;
+      let currentX = 0;
+      let pressTimer = null;
+
       bubble.addEventListener('contextmenu', (e) => { e.preventDefault(); openWaContextMenu(e, key, isOutgoing, msg); });
       bubble.addEventListener('click', (e) => {
         if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
         e.stopPropagation();
         openWaContextMenu(e, key, isOutgoing, msg);
+      });
+
+      // Swipe to Reply / Mobile Long Press
+      row.addEventListener('touchstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
+        startX = e.touches[0].clientX;
+        pressTimer = setTimeout(() => {
+          if (navigator.vibrate) navigator.vibrate(40);
+          openWaContextMenu(e.touches[0], key, isOutgoing, msg);
+        }, 450);
+      }, { passive: true });
+
+      row.addEventListener('touchmove', (e) => {
+        clearTimeout(pressTimer);
+        currentX = e.touches[0].clientX;
+        const diffX = currentX - startX;
+
+        // Smooth swipe to reply threshold
+        if (diffX > 15 && diffX < 85) {
+          row.style.transform = `translateX(${diffX}px)`;
+          const hint = document.getElementById(`hint_${key}`);
+          if (hint) hint.style.opacity = diffX / 75;
+        }
+      }, { passive: true });
+
+      row.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+        const diffX = currentX - startX;
+        if (diffX > 55) {
+          triggerReply(key);
+        }
+        row.style.transform = 'translateX(0)';
+        const hint = document.getElementById(`hint_${key}`);
+        if (hint) hint.style.opacity = 0;
+        startX = 0;
+        currentX = 0;
       });
     }
 
@@ -1743,10 +1820,23 @@
       if (msg.deleted) { document.getElementById(`bubble_${key}`).innerHTML = `<em style="color:var(--text-muted); font-size:0.8rem;">This message was deleted</em>`; return; }
       const contentEl = document.getElementById(`content_${key}`);
       if (contentEl && !msg.audio && !msg.image && !msg.document) {
-        contentEl.innerHTML = parseFormattedText(msg.message);
+        let txt = String(msg.message).replace(/</g, "&lt;");
+        txt = txt.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+        contentEl.innerHTML = parseFormattedText(txt);
       }
       const reactBadge = document.getElementById(`reactions_${key}`);
-      if (reactBadge && msg.reactions) { reactBadge.innerText = Object.values(msg.reactions).join(' '); reactBadge.style.display = 'flex'; }
+      if (reactBadge) {
+         if (msg.reactions) { reactBadge.innerText = Object.values(msg.reactions).join(' '); reactBadge.style.display = 'flex'; }
+         else { reactBadge.style.display = 'none'; }
+      }
+      if (String(msg.sender_code).trim() === String(currentUser.user_code).trim()) {
+        const tick = row.querySelector('.status-tick');
+        if (tick) {
+          const s = msg.status || 'sent';
+          if (s === 'seen') { tick.className = 'status-tick seen'; tick.innerText = '✓✓'; }
+          else if (s === 'delivered') { tick.className = 'status-tick'; tick.innerText = '✓✓'; }
+        }
+      }
     }
 
     function openWaContextMenu(e, msgId, isOutgoing, msg) {
@@ -1760,19 +1850,39 @@
       menu.style.top = Math.min(e.clientY || 100, window.innerHeight - 300) + 'px';
     }
 
-    document.body.onclick = () => { document.getElementById('waContextMenu').style.display = 'none'; };
+    document.body.onclick = () => { 
+      document.getElementById('waContextMenu').style.display = 'none'; 
+    };
+
+    function openCustomReactionPicker() {
+      document.getElementById('waContextMenu').style.display = 'none';
+      reactionMode = true; // Use emoji picker for reactions
+      document.getElementById('emojiPicker').classList.add('active');
+    }
 
     async function reactToMessage(emoji) {
       if (!selectedMsgId || !activeFriend) return;
-      await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}/reactions/${currentUser.user_code}`).set(emoji);
+      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+      const reactRef = db.ref(`messages/${chatId}/${selectedMsgId}/reactions/${currentUser.user_code}`);
+      
+      const snap = await reactRef.once('value');
+      if (snap.val() === emoji) {
+        await reactRef.remove(); // Toggle logic: If same reaction exists, remove it
+      } else {
+        await reactRef.set(emoji);
+      }
+      
+      document.getElementById('waContextMenu').style.display = 'none';
+      document.getElementById('emojiPicker').classList.remove('active');
     }
 
-    function triggerReplyFromMenu() { if (selectedMsgId) triggerReply(selectedMsgId); }
+    function triggerReplyFromMenu() { if (selectedMsgId) triggerReply(selectedMsgId); document.getElementById('waContextMenu').style.display='none'; }
     function triggerReply(msgId) {
       const bubble = document.getElementById(`content_${msgId}`);
       replyingToMsg = { sender: activeFriend ? activeFriend.username : 'User', text: bubble ? bubble.innerText.substring(0, 40) : 'Message' };
       document.getElementById('replyPreviewText').innerText = replyingToMsg.text;
       document.getElementById('replyPreviewBar').classList.add('active');
+      document.getElementById('chatMessageInput').focus();
     }
     function cancelReply() { replyingToMsg = null; document.getElementById('replyPreviewBar').classList.remove('active'); }
 
@@ -1780,6 +1890,7 @@
       if (!selectedMsgId) return;
       const b = document.getElementById(`content_${selectedMsgId}`);
       if (b) { navigator.clipboard.writeText(b.innerText); alert("Copied!"); }
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     function openForwardModal() {
@@ -1809,6 +1920,7 @@
     async function pinActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
       await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).set({ text: document.getElementById(`content_${selectedMsgId}`).innerText });
+      document.getElementById('waContextMenu').style.display = 'none';
     }
     async function unpinMessage() { if (activeFriend) await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).remove(); }
 
@@ -1816,13 +1928,15 @@
       if (!selectedMsgId || !activeFriend) return;
       const t = prompt('Edit message:', document.getElementById(`content_${selectedMsgId}`).innerText);
       if (t && t.trim()) await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ message: t.trim(), edited: true });
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     async function deleteActiveMessage() {
       if (!selectedMsgId || !activeFriend) return;
       if (confirm('Delete for everyone?')) {
-        await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ deleted: true, message: '', image: null, audio: null, document: null });
+        await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ deleted: true, message: '', image: null, audio: null, document: null, file_url: null, file_name: null });
       }
+      document.getElementById('waContextMenu').style.display = 'none';
     }
 
     function compressImage(src, maxW, maxH, q, cb) {
@@ -1860,7 +1974,10 @@
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
       const ts = new Date().getTime();
       input.value = '';
+      
+      reactionMode = false;
       document.getElementById('emojiPicker').classList.remove('active');
+      db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false);
 
       const payload = { sender_code: currentUser.user_code, message: text, timestamp: ts, status: 'sent' };
       if (replyingToMsg) { payload.reply_to = replyingToMsg; cancelReply(); }
