@@ -2225,39 +2225,81 @@
     function copyActiveMessage() { if (!selectedMsgId) return; const b = document.getElementById(`content_${selectedMsgId}`); if (b) { navigator.clipboard.writeText(b.innerText); alert("Copied!"); } document.getElementById('waContextMenu').style.display = 'none'; }
 
     function openForwardModal(isBulk = false) {
-      document.getElementById('waContextMenu').style.display = 'none'; if (isBulk && selectedMessagesSet.size === 0) return;
-      const container = document.getElementById('forwardFriendsList'); container.innerHTML = '';
-      if (!cachedFriends.length) container.innerHTML = 'No friends';
-      cachedFriends.forEach(f => {
-        const item = document.createElement('div'); item.className = 'list-item'; item.style.padding = '8px 12px'; item.onclick = () => forwardToFriend(f, isBulk);
-        item.innerHTML = `<strong>${escapeHtml(f.username)}</strong><button class="btn btn-primary" style="padding:4px 10px;font-size:0.75rem;">Send</button>`;
-        container.appendChild(item);
-      });
+      document.getElementById('waContextMenu').style.display = 'none'; 
+      if (isBulk && selectedMessagesSet.size === 0) return;
+      
+      const container = document.getElementById('forwardFriendsList'); 
+      container.innerHTML = '';
+      
+      if (!cachedFriends || cachedFriends.length === 0) { 
+        container.innerHTML = '<div style="padding: 10px; color: var(--text-muted); text-align: center;">No friends available</div>'; 
+      } else {
+        cachedFriends.forEach(f => {
+          const item = document.createElement('div'); 
+          item.className = 'list-item'; 
+          item.style.padding = '8px 12px'; 
+          
+          item.innerHTML = `
+            <strong>${escapeHtml(f.username)}</strong>
+            <button class="btn btn-primary" style="padding:4px 10px;font-size:0.75rem;">Send</button>
+          `;
+          
+          // Button par click karte hi forward ho jayega
+          item.onclick = (e) => {
+            e.preventDefault();
+            forwardToFriend(f, isBulk);
+          };
+          
+          container.appendChild(item);
+        });
+      }
+      
       document.getElementById('forwardTitle').innerText = isBulk ? `Forward ${selectedMessagesSet.size} messages...` : `Forward message...`;
       document.getElementById('forwardModal').style.display = 'flex';
     }
-    function closeForwardModal() { document.getElementById('forwardModal').style.display = 'none'; }
+
+    function closeForwardModal() { 
+      document.getElementById('forwardModal').style.display = 'none'; 
+    }
 
     async function forwardToFriend(target, isBulk) {
       const targetChatId = getChatId(currentUser.user_code, target.user_code);
+      const ts = new Date().getTime();
+
       if (isBulk) {
+        // BULK FORWARD (Ek sath bahut saare messages bhejna)
         const srcChatId = getChatId(currentUser.user_code, activeFriend.user_code);
         for (let msgId of selectedMessagesSet) {
           const snap = await db.ref(`messages/${srcChatId}/${msgId}`).once('value');
           if (snap.exists()) {
-             let payload = snap.val(); payload.sender_code = currentUser.user_code; payload.timestamp = new Date().getTime(); payload.status = 'sent';
+             let payload = { ...snap.val() }; // Deep copy message
+             payload.sender_code = currentUser.user_code; 
+             payload.timestamp = ts; 
+             payload.status = 'sent';
+             
+             // Dusre ki chat se delete/star history hatao
              delete payload.deletedForMe; delete payload.starredBy; delete payload.reactions; delete payload.reply_to;
              await db.ref('messages/' + targetChatId).push(payload);
           }
         }
         exitSelectionMode();
       } else {
-        if (!selectedMsgText) return; let payload = { sender_code: currentUser.user_code, message: selectedMsgText, timestamp: new Date().getTime(), status: 'sent' };
-        if (selectedMsgData && selectedMsgData.image) payload.image = selectedMsgData.image;
-        if (selectedMsgData && selectedMsgData.document) { payload.document = true; payload.file_url = selectedMsgData.file_url; payload.file_name = selectedMsgData.file_name; }
+        // SINGLE FORWARD (Text, Image, Document, or Audio)
+        if (!selectedMsgData) return;
+        
+        let payload = { ...selectedMsgData }; // Pure message ka data copy kar lo
+        payload.sender_code = currentUser.user_code; 
+        payload.timestamp = ts; 
+        payload.status = 'sent';
+        
+        // Purani details hatao taaki ekdum fresh message lage
+        delete payload.deletedForMe; delete payload.starredBy; delete payload.reactions; delete payload.reply_to;
+        
         await db.ref('messages/' + targetChatId).push(payload);
       }
-      alert('Forwarded!'); closeForwardModal();
+      
+      alert(`Message forwarded to ${target.username}!`); 
+      closeForwardModal();
     }
 
     async function pinActiveMessage() { if (!selectedMsgId || !activeFriend) return; await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).set({ text: document.getElementById(`content_${selectedMsgId}`).innerText }); document.getElementById('waContextMenu').style.display = 'none'; }
