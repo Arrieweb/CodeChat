@@ -1932,10 +1932,23 @@
       document.getElementById('friendProfileModal').style.display = 'flex';
     }
 
-    async function toggleBlockUser() {
-      if (!activeFriend) return; const ref = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
-      if (isFriendBlockedByMe) { await ref.set(false); alert('User has been unblocked.'); } else { if (confirm(`Are you sure you want to block ${activeFriend.username}? They will not be able to message you.`)) { await ref.set(true); alert('User blocked securely.'); } }
-      viewFriendProfile();
+  async function toggleBlockUser() {
+      if (!activeFriend) return; 
+      const ref = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
+      
+      if (isFriendBlockedByMe) { 
+        await ref.remove(); // Cleanly database se block hata dega
+        isFriendBlockedByMe = false; // Aapke phone/system mein instant update karega
+        alert('User has been unblocked.'); 
+      } else { 
+        if (confirm(`Are you sure you want to block ${activeFriend.username}? They will not be able to message you.`)) { 
+          await ref.set(true); 
+          isFriendBlockedByMe = true; // Aapke phone/system mein instant update karega
+          alert('User blocked securely.'); 
+        } 
+      }
+      viewFriendProfile(); // Modal UI ko turant refresh karega
+      updateChatLockUI();  // Chat input bar ko turant hide/show karega
     }
 
     function updateChatLockUI() {
@@ -1991,9 +2004,18 @@
         document.getElementById('emptyPlaceholder').style.display = 'none'; document.getElementById('chatHeader').style.display = 'flex'; document.getElementById('chatBody').style.display = 'flex'; document.getElementById('chatInputBar').style.display = 'flex'; document.getElementById('blockWarningBanner').style.display = 'none';
         document.getElementById('chatPartnerName').innerText = friend.username; renderAvatar(document.getElementById('chatPartnerAvatar'), friend.username, friend.photoUrl);
         const chatBody = document.getElementById('chatBody'); chatBody.innerHTML = '';
-        if (activeChatListener) activeChatListener.off(); const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-        db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code).on('value', snap => { isFriendBlockedByMe = snap.val() === true; updateChatLockUI(); });
-        db.ref('blocked/' + activeFriend.user_code + '/' + currentUser.user_code).on('value', snap => { amIBlockedByFriend = snap.val() === true; updateChatLockUI(); });
+       if (activeChatListener) activeChatListener.off(); 
+        const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+        
+        // Puraane friends ke listeners ko band karein taaki data clash na ho
+        if (window.myBlockRef) window.myBlockRef.off();
+        if (window.theirBlockRef) window.theirBlockRef.off();
+        
+        window.myBlockRef = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
+        window.theirBlockRef = db.ref('blocked/' + activeFriend.user_code + '/' + currentUser.user_code);
+        
+        window.myBlockRef.on('value', snap => { isFriendBlockedByMe = snap.val() === true; updateChatLockUI(); });
+        window.theirBlockRef.on('value', snap => { amIBlockedByFriend = snap.val() === true; updateChatLockUI(); });
 
         const chatRef = db.ref('messages/' + chatId); let isInitialLoad = true; activeChatListener = chatRef;
         activeChatListener.on('child_added', (snapshot) => {
