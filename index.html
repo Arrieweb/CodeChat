@@ -1133,6 +1133,19 @@
     }
 
     .wa-menu-item:hover { background: var(--menu-hover); }
+    .chat-pin-btn:hover {
+  background: var(--menu-hover) !important;
+}
+
+.list-item:hover .chat-pin-btn {
+  opacity: 1 !important;
+}
+
+@media (max-width: 700px) {
+  .chat-pin-btn {
+    opacity: 1 !important;
+  }
+}
     .wa-menu-item.danger { color: #ff453a; }
 
     .wa-menu-item svg {
@@ -1869,6 +1882,35 @@ function sortChatList(friendsArray) {
   });
 }
 
+
+  function toggleChatPin(friendCode) {
+  if (!currentUser || !friendCode) return;
+
+  const metaRef = db.ref(
+    'chatMeta/' +
+    currentUser.user_code +
+    '/' +
+    friendCode
+  );
+
+  const currentPinned =
+    !!(chatMetaState[friendCode] && chatMetaState[friendCode].pinned);
+
+  metaRef.update({
+    pinned: !currentPinned
+  }).then(() => {
+    chatMetaState[friendCode] = {
+      ...(chatMetaState[friendCode] || {}),
+      pinned: !currentPinned
+    };
+
+    scheduleChatListRender();
+  }).catch(err => {
+    console.error('Failed to pin/unpin chat:', err);
+  });
+}
+
+  
 function scheduleChatListRender() {
   clearTimeout(chatListRenderTimer);
 
@@ -1893,10 +1935,29 @@ function setupChatListListener(friend) {
   if (!currentUser || !friend) return;
 
   const code = friend.user_code;
-  const chatId = getChatId(currentUser.user_code, code);
+const chatId = getChatId(currentUser.user_code, code);
 
-  // Do not create the same listeners repeatedly
-  if (chatListListeners[code]) return;
+// Load chat-specific settings such as pin state
+const chatMetaRef = db.ref(
+  'chatMeta/' +
+  currentUser.user_code +
+  '/' +
+  code
+);
+
+chatMetaRef.on('value', (snapshot) => {
+  const meta = snapshot.val() || {};
+
+  chatMetaState[code] = {
+    ...(chatMetaState[code] || {}),
+    pinned: !!meta.pinned
+  };
+
+  scheduleChatListRender();
+});
+
+// Do not create the message/status listeners repeatedly
+if (chatListListeners[code]) return;
 
   const chatRef = db.ref('messages/' + chatId);
 
@@ -2001,33 +2062,74 @@ function renderFriendsUI(friendsArray) {
     });
 
     item.innerHTML = `
-      <div style="display:flex; align-items:center; min-width:0; width:100%;">
-        <div class="avatar-wrapper">
-          <div class="avatar" id="avatar_${code}"></div>
-          <div class="online-badge" id="badge_${code}"></div>
-        </div>
+  <div style="display:flex; align-items:center; min-width:0; width:100%;">
 
-        <div class="item-meta">
-          <span class="title" style="display:flex; justify-content:space-between; gap:8px;">
-            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              ${escapeHtml(info.username)}
-            </span>
+    <div class="avatar-wrapper">
+      <div class="avatar" id="avatar_${code}"></div>
+      <div class="online-badge" id="badge_${code}"></div>
+    </div>
 
-            <span
-              class="unread-badge"
-              id="unread_${code}"
-              style="${meta.unreadCount > 0 ? 'display:inline-block;' : 'display:none;'}"
-            >
-              ${meta.unreadCount || 0}
-            </span>
-          </span>
+    <div class="item-meta" style="min-width:0; flex:1;">
 
-          <span class="subtitle" id="subtitle_${code}">
-            ${escapeHtml(meta.lastMessage || 'Tap to chat')}
-          </span>
-        </div>
-      </div>
-    `;
+      <span
+        class="title"
+        style="display:flex; align-items:center; justify-content:space-between; gap:8px;"
+      >
+        <span
+          style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+        >
+          ${escapeHtml(info.username)}
+        </span>
+
+        <span
+          class="unread-badge"
+          id="unread_${code}"
+          style="${meta.unreadCount > 0 ? 'display:inline-block;' : 'display:none;'}"
+        >
+          ${meta.unreadCount || 0}
+        </span>
+      </span>
+
+      <span
+        class="subtitle"
+        id="subtitle_${code}"
+        style="display:flex; align-items:center; gap:5px;"
+      >
+        ${meta.pinned ? '<span title="Pinned">📌</span>' : ''}
+        <span
+          style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+        >
+          ${escapeHtml(meta.lastMessage || 'Tap to chat')}
+        </span>
+      </span>
+
+    </div>
+
+    <button
+      type="button"
+      class="chat-pin-btn"
+      title="${meta.pinned ? 'Unpin chat' : 'Pin chat'}"
+      onclick="event.stopPropagation(); toggleChatPin('${code}')"
+      style="
+        border:none;
+        background:transparent;
+        color:var(--text-muted);
+        cursor:pointer;
+        padding:8px;
+        border-radius:10px;
+        font-size:14px;
+        opacity:${meta.pinned ? '1' : '0'};
+        transition:opacity .15s, background .15s;
+        flex-shrink:0;
+      "
+      onmouseenter="this.style.opacity='1'; this.style.background='var(--menu-hover)'"
+      onmouseleave="this.style.opacity='${meta.pinned ? '1' : '0'}'"
+    >
+      ${meta.pinned ? '📌' : '📌'}
+    </button>
+
+  </div>
+`;
 
     container.appendChild(item);
 
