@@ -1836,7 +1836,6 @@
 
     function filterFriendsList() { const query = document.getElementById('searchFriends').value.toLowerCase().trim(); if (!query) { renderFriendsUI(cachedFriends); return; } const filtered = cachedFriends.filter(f => (f.username && f.username.toLowerCase().includes(query)) || (f.user_code && String(f.user_code).includes(query))); renderFriendsUI(filtered); }
 
-    // RENDER FRIEND LIST (Includes Preview & Unread Fix)
     function renderFriendsUI(friendsArray) {
       const container = document.getElementById('friendsList');
       if (friendsArray.length === 0) { container.innerHTML = `<div style="text-align: center; color: var(--text-muted); margin-top: 50px;">No chats found.</div>`; return; }
@@ -1939,9 +1938,11 @@
     
     async function acceptRequest(k, rc) { await db.ref('friends/' + k).update({ status: 'accepted' }); backupToGoogleSheet({ action: 'accept_request', requester_code: rc, receiver_code: currentUser.user_code }); alert('Connected successfully!'); closeRequestsModal(); listenToFriendsAndRequests(); }
     function closeRequestsModal() { document.getElementById('requestsModal').style.display = 'none'; }
-
     function getChatId(cA, cB) { return [String(cA), String(cB)].sort().join('_'); }
 
+    /* ========================================================= */
+    /* BLOCKING SYSTEM                                           */
+    /* ========================================================= */
     function viewFriendProfile() {
       if (!activeFriend) return;
       document.getElementById('fpName').innerText = activeFriend.username; document.getElementById('fpCode').innerText = "Code: " + activeFriend.user_code;
@@ -1952,11 +1953,9 @@
       document.getElementById('friendProfileModal').style.display = 'flex';
     }
 
- async function toggleBlockUser() {
+    async function toggleBlockUser() {
       if (!activeFriend || !currentUser) return; 
       const ref = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
-      
-      // Seedha Firebase se check karega ki user block hai ya nahi
       const snap = await ref.once('value');
       
       if (snap.val() === true) { 
@@ -1970,7 +1969,6 @@
           alert('User blocked securely.'); 
         } 
       }
-      // UI ko force refresh karega
       viewFriendProfile(); 
       updateChatLockUI();
     }
@@ -2028,10 +2026,9 @@
         document.getElementById('emptyPlaceholder').style.display = 'none'; document.getElementById('chatHeader').style.display = 'flex'; document.getElementById('chatBody').style.display = 'flex'; document.getElementById('chatInputBar').style.display = 'flex'; document.getElementById('blockWarningBanner').style.display = 'none';
         document.getElementById('chatPartnerName').innerText = friend.username; renderAvatar(document.getElementById('chatPartnerAvatar'), friend.username, friend.photoUrl);
         const chatBody = document.getElementById('chatBody'); chatBody.innerHTML = '';
-       if (activeChatListener) activeChatListener.off(); 
+        if (activeChatListener) activeChatListener.off(); 
         const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
         
-        // Puraane friends ke listeners ko band karein taaki data clash na ho
         if (window.myBlockRef) window.myBlockRef.off();
         if (window.theirBlockRef) window.theirBlockRef.off();
         
@@ -2082,7 +2079,6 @@
       }; reader.readAsDataURL(file);
     }
 
-    // RENDER BUBBLE (Includes Fix 3: Image Click Propagation Stop)
     function renderBubble(key, msg) {
       if (msg.deletedForMe && msg.deletedForMe[currentUser.user_code]) return;
       const chatBody = document.getElementById('chatBody'); const isOutgoing = String(msg.sender_code).trim() === String(currentUser.user_code).trim();
@@ -2131,72 +2127,26 @@
       bindSwipeAndTap(row, key, isOutgoing, msg);
     }
 
-    // BIND SWIPE (Includes Fix 1: Desktop Right-Click & Mobile Hold Context Menu)
     function bindSwipeAndTap(row, key, isOutgoing, msg) {
       const bubble = row.querySelector('.bubble');
       let startX = 0; let currentX = 0; let pressTimer = null;
-
-      // Desktop Right Click
-      bubble.addEventListener('contextmenu', (e) => { 
-        e.preventDefault(); 
-        if (isSelectionMode) { toggleMessageSelection(key); return; } 
-        openWaContextMenu(e, key, isOutgoing, msg); 
-      });
-      
-      // Desktop & Mobile Single Tap
-      bubble.addEventListener('click', (e) => {
-        if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
-        e.stopPropagation(); 
-        if (isSelectionMode) { toggleMessageSelection(key); return; }
-        openWaContextMenu(e, key, isOutgoing, msg);
-      });
-
-      // Mobile Long Press (Hold)
-      row.addEventListener('touchstart', (e) => {
-        if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return;
-        startX = e.touches[0].clientX;
-        pressTimer = setTimeout(() => { 
-          if (navigator.vibrate) navigator.vibrate(40); 
-          if (isSelectionMode) { toggleMessageSelection(key); }
-          else { openWaContextMenu(e.touches[0], key, isOutgoing, msg); }
-        }, 500);
-      }, { passive: true });
-
-      // Swipe to reply
-      row.addEventListener('touchmove', (e) => {
-        clearTimeout(pressTimer); 
-        currentX = e.touches[0].clientX; const diffX = currentX - startX;
-        if (!isSelectionMode && diffX > 15 && diffX < 85) { 
-          row.querySelector('.bubble-wrap').style.transform = `translateX(${diffX}px)`; 
-          const hint = document.getElementById(`hint_${key}`); 
-          if (hint) hint.style.opacity = diffX / 75; 
-        }
-      }, { passive: true });
-
-      row.addEventListener('touchend', () => {
-        clearTimeout(pressTimer); 
-        if (!isSelectionMode && currentX - startX > 55) triggerReply(key);
-        row.querySelector('.bubble-wrap').style.transform = 'translateX(0)';
-        const hint = document.getElementById(`hint_${key}`); 
-        if (hint) hint.style.opacity = 0; 
-        startX = 0; currentX = 0;
-      });
+      bubble.addEventListener('contextmenu', (e) => { e.preventDefault(); if (isSelectionMode) { toggleMessageSelection(key); return; } openWaContextMenu(e, key, isOutgoing, msg); });
+      bubble.addEventListener('click', (e) => { if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return; e.stopPropagation(); if (isSelectionMode) { toggleMessageSelection(key); return; } openWaContextMenu(e, key, isOutgoing, msg); });
+      row.addEventListener('touchstart', (e) => { if (e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO' || e.target.closest('.file-bubble') || e.target.tagName === 'A') return; startX = e.touches[0].clientX; pressTimer = setTimeout(() => { if (navigator.vibrate) navigator.vibrate(40); if (isSelectionMode) { toggleMessageSelection(key); } else { openWaContextMenu(e.touches[0], key, isOutgoing, msg); } }, 500); }, { passive: true });
+      row.addEventListener('touchmove', (e) => { clearTimeout(pressTimer); currentX = e.touches[0].clientX; const diffX = currentX - startX; if (!isSelectionMode && diffX > 15 && diffX < 85) { row.querySelector('.bubble-wrap').style.transform = `translateX(${diffX}px)`; const hint = document.getElementById(`hint_${key}`); if (hint) hint.style.opacity = diffX / 75; } }, { passive: true });
+      row.addEventListener('touchend', () => { clearTimeout(pressTimer); if (!isSelectionMode && currentX - startX > 55) triggerReply(key); row.querySelector('.bubble-wrap').style.transform = 'translateX(0)'; const hint = document.getElementById(`hint_${key}`); if (hint) hint.style.opacity = 0; startX = 0; currentX = 0; });
     }
 
     function updateBubbleUI(key, msg) {
       const row = document.getElementById(`row_${key}`); if (!row) return;
       if (msg.deletedForMe && msg.deletedForMe[currentUser.user_code]) { row.style.display = 'none'; return; }
       if (msg.deleted) { document.getElementById(`bubble_${key}`).innerHTML = `<em style="color:var(--text-muted); font-size:0.8rem;"><svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px; vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg> This message was deleted</em>`; return; }
-      
       const contentEl = document.getElementById(`content_${key}`);
       if (contentEl && !msg.audio && !msg.image && !msg.document) { let txt = String(msg.message).replace(/</g, "&lt;"); txt = txt.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>'); contentEl.innerHTML = parseFormattedText(txt); }
-      
       const reactBadge = document.getElementById(`reactions_${key}`);
       if (reactBadge) { if (msg.reactions) { reactBadge.innerText = Object.values(msg.reactions).join(' '); reactBadge.style.display = 'flex'; } else { reactBadge.style.display = 'none'; } }
-      
       const starIcon = document.getElementById(`star_${key}`);
       if (starIcon) { if (msg.starredBy && msg.starredBy[currentUser.user_code]) starIcon.classList.add('active'); else starIcon.classList.remove('active'); }
-
       if (String(msg.sender_code).trim() === String(currentUser.user_code).trim()) {
         const tickWrapper = row.querySelector('.bubble-meta');
         if (tickWrapper) {
@@ -2212,7 +2162,7 @@
     }
 
     /* ========================================================= */
-    /* MENUS & MESSAGE ACTIONS                                   */
+    /* MENUS, ACTIONS, FORWARD & BLOCKED LIST                    */
     /* ========================================================= */
     function openWaContextMenu(e, msgId, isOutgoing, msg) {
       if (isSelectionMode) return;
@@ -2221,7 +2171,6 @@
       document.getElementById('menuEditOption').style.display = isOutgoing && !msg.image && !msg.audio && !msg.document ? 'flex' : 'none';
       document.getElementById('menuDeleteOption').style.display = isOutgoing ? 'flex' : 'none';
       document.getElementById('ctxMenuStarText').innerText = (msg.starredBy && msg.starredBy[currentUser.user_code]) ? "Unstar" : "Star Message";
-      
       menu.style.display = 'flex'; 
       menu.style.left = Math.min(e.clientX || 100, window.innerWidth - 220) + 'px'; 
       menu.style.top = Math.min(e.clientY || 100, window.innerHeight - 300) + 'px';
@@ -2229,135 +2178,67 @@
 
     document.body.onclick = () => { document.getElementById('waContextMenu').style.display = 'none'; };
     function openCustomReactionPicker() { document.getElementById('waContextMenu').style.display = 'none'; reactionMode = true; document.getElementById('emojiPicker').classList.add('active'); }
-
-    async function reactToMessage(emoji) {
-      if (!selectedMsgId || !activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
-      const reactRef = db.ref(`messages/${chatId}/${selectedMsgId}/reactions/${currentUser.user_code}`);
-      const snap = await reactRef.once('value'); if (snap.val() === emoji) await reactRef.remove(); else await reactRef.set(emoji);
-      document.getElementById('waContextMenu').style.display = 'none'; document.getElementById('emojiPicker').classList.remove('active');
-    }
-
+    async function reactToMessage(emoji) { if (!selectedMsgId || !activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); const reactRef = db.ref(`messages/${chatId}/${selectedMsgId}/reactions/${currentUser.user_code}`); const snap = await reactRef.once('value'); if (snap.val() === emoji) await reactRef.remove(); else await reactRef.set(emoji); document.getElementById('waContextMenu').style.display = 'none'; document.getElementById('emojiPicker').classList.remove('active'); }
     function triggerReplyFromMenu() { if (selectedMsgId) triggerReply(selectedMsgId); document.getElementById('waContextMenu').style.display='none'; }
-    function triggerReply(msgId) {
-      const bubble = document.getElementById(`content_${msgId}`);
-      replyingToMsg = { sender: activeFriend ? activeFriend.username : 'User', text: bubble ? bubble.innerText.substring(0, 40) : 'Message' };
-      document.getElementById('replyPreviewText').innerText = replyingToMsg.text;
-      document.getElementById('replyPreviewBar').classList.add('active');
-      document.getElementById('chatMessageInput').focus();
-    }
+    function triggerReply(msgId) { const bubble = document.getElementById(`content_${msgId}`); replyingToMsg = { sender: activeFriend ? activeFriend.username : 'User', text: bubble ? bubble.innerText.substring(0, 40) : 'Message' }; document.getElementById('replyPreviewText').innerText = replyingToMsg.text; document.getElementById('replyPreviewBar').classList.add('active'); document.getElementById('chatMessageInput').focus(); }
     function cancelReply() { replyingToMsg = null; document.getElementById('replyPreviewBar').classList.remove('active'); }
     function copyActiveMessage() { if (!selectedMsgId) return; const b = document.getElementById(`content_${selectedMsgId}`); if (b) { navigator.clipboard.writeText(b.innerText); alert("Copied!"); } document.getElementById('waContextMenu').style.display = 'none'; }
 
-  /* ========================================================= */
-    /* FORWARD SYSTEM WITH SEARCH BAR                            */
-    /* ========================================================= */
+    // SEARCHABLE FORWARD SYSTEM
     let currentForwardIsBulk = false;
-
-    /* ========================================================= */
-    /* FORWARD SYSTEM WITH SEARCH BAR                            */
-    /* ========================================================= */
-    let currentForwardIsBulk = false;
-
     function openForwardModal(isBulk = false) {
       document.getElementById('waContextMenu').style.display = 'none'; 
       if (isBulk && selectedMessagesSet.size === 0) return;
-      
       currentForwardIsBulk = isBulk;
-      document.getElementById('forwardSearchInput').value = ''; // Search box empty karega
-      
+      document.getElementById('forwardSearchInput').value = ''; 
       renderForwardFriendsList(cachedFriends);
-      
       document.getElementById('forwardTitle').innerText = isBulk ? `Forward ${selectedMessagesSet.size} messages...` : `Forward message...`;
       document.getElementById('forwardModal').style.display = 'flex';
     }
-
     function renderForwardFriendsList(friendsToRender) {
-      const container = document.getElementById('forwardFriendsList'); 
-      container.innerHTML = '';
-      
-      if (!friendsToRender || friendsToRender.length === 0) { 
-        container.innerHTML = '<div style="padding: 10px; color: var(--text-muted); text-align: center;">No friends found</div>'; 
-        return;
-      } 
-      
+      const container = document.getElementById('forwardFriendsList'); container.innerHTML = '';
+      if (!friendsToRender || friendsToRender.length === 0) { container.innerHTML = '<div style="padding: 10px; color: var(--text-muted); text-align: center;">No friends found</div>'; return; } 
       friendsToRender.forEach(f => {
-        const item = document.createElement('div'); 
-        item.className = 'list-item'; 
-        item.style.padding = '8px 12px'; 
-        item.style.cursor = 'pointer';
-        
-        item.innerHTML = `
-          <strong>${escapeHtml(f.username)}</strong>
-          <button class="btn btn-primary" style="padding:4px 10px;font-size:0.75rem; pointer-events:none;">Send</button>
-        `;
-        
-        item.onclick = (e) => {
-          e.preventDefault();
-          forwardToFriend(f, currentForwardIsBulk);
-        };
-        
+        const item = document.createElement('div'); item.className = 'list-item'; item.style.padding = '8px 12px'; item.style.cursor = 'pointer';
+        item.innerHTML = `<strong>${escapeHtml(f.username)}</strong><button class="btn btn-primary" style="padding:4px 10px;font-size:0.75rem; pointer-events:none;">Send</button>`;
+        item.onclick = (e) => { e.preventDefault(); forwardToFriend(f, currentForwardIsBulk); };
         container.appendChild(item);
       });
     }
-
     function filterForwardFriends() {
       const query = document.getElementById('forwardSearchInput').value.toLowerCase().trim();
-      if (!query) {
-        renderForwardFriendsList(cachedFriends);
-        return;
-      }
-      const filtered = cachedFriends.filter(f => 
-        (f.username && f.username.toLowerCase().includes(query)) || 
-        (f.user_code && String(f.user_code).includes(query))
-      );
+      if (!query) { renderForwardFriendsList(cachedFriends); return; }
+      const filtered = cachedFriends.filter(f => (f.username && f.username.toLowerCase().includes(query)) || (f.user_code && String(f.user_code).includes(query)));
       renderForwardFriendsList(filtered);
     }
-
-    function closeForwardModal() { 
-      document.getElementById('forwardModal').style.display = 'none'; 
-    }
+    function closeForwardModal() { document.getElementById('forwardModal').style.display = 'none'; }
 
     async function forwardToFriend(target, isBulk) {
       if (!currentUser || !activeFriend || !target) return;
       const targetChatId = getChatId(currentUser.user_code, target.user_code);
       const srcChatId = getChatId(currentUser.user_code, activeFriend.user_code);
       const ts = new Date().getTime();
-
       let msgIdsToForward = [];
-      if (isBulk) {
-        msgIdsToForward = Array.from(selectedMessagesSet);
-        exitSelectionMode();
-      } else {
-        if (!selectedMsgId) return;
-        msgIdsToForward = [selectedMsgId];
-      }
-
+      if (isBulk) { msgIdsToForward = Array.from(selectedMessagesSet); exitSelectionMode(); } 
+      else { if (!selectedMsgId) return; msgIdsToForward = [selectedMsgId]; }
       for (let msgId of msgIdsToForward) {
         const snap = await db.ref(`messages/${srcChatId}/${msgId}`).once('value');
         if (snap.exists()) {
-           let payload = snap.val();
-           payload.sender_code = currentUser.user_code;
-           payload.timestamp = ts;
-           payload.status = 'sent';
-           
+           let payload = snap.val(); payload.sender_code = currentUser.user_code; payload.timestamp = ts; payload.status = 'sent';
            delete payload.deletedForMe; delete payload.starredBy; delete payload.reactions; delete payload.reply_to;
            await db.ref('messages/' + targetChatId).push(payload);
         }
       }
-      alert(`Message forwarded to ${target.username}!`); 
-      closeForwardModal();
+      alert(`Message forwarded to ${target.username}!`); closeForwardModal();
     }
 
-    /* ========================================================= */
-    /* BLOCKED USERS LIST SYSTEM                                 */
-    /* ========================================================= */
+    // BLOCKED USERS LIST SYSTEM
     async function openBlockedUsersModal() {
       document.getElementById('mainAppMenu').style.display = 'none';
       const container = document.getElementById('blockedUsersList');
       container.innerHTML = 'Loading...';
       document.getElementById('blockedUsersModal').style.display = 'flex';
 
-      // Firebase se list fetch karega un logon ki jinko aapne block kiya hai
       const snap = await db.ref('blocked/' + currentUser.user_code).once('value');
       const blockedData = snap.val() || {};
       const blockedCodes = Object.keys(blockedData).filter(code => blockedData[code] === true);
@@ -2371,114 +2252,32 @@
       for (let code of blockedCodes) {
         const uSnap = await db.ref('users/' + code).once('value');
         const u = uSnap.val() || { username: 'Unknown User' };
-        
         const row = document.createElement('div');
         row.style = 'display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--glass-border);';
-        row.innerHTML = `
-          <div><strong>${escapeHtml(u.username)}</strong> <br> <small style="color: var(--text-muted);">Code: ${code}</small></div>
-          <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem; background: rgba(52, 199, 89, 0.2); color: #34c759; border: 1px solid rgba(52,199,89,0.3);" onclick="unblockUserFromList('${code}')">Unblock</button>
-        `;
+        row.innerHTML = `<div><strong>${escapeHtml(u.username)}</strong> <br> <small style="color: var(--text-muted);">Code: ${code}</small></div><button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem; background: rgba(52, 199, 89, 0.2); color: #34c759; border: 1px solid rgba(52,199,89,0.3);" onclick="unblockUserFromList('${code}')">Unblock</button>`;
         container.appendChild(row);
       }
     }
-
-    function closeBlockedUsersModal() {
-      document.getElementById('blockedUsersModal').style.display = 'none';
-    }
+    function closeBlockedUsersModal() { document.getElementById('blockedUsersModal').style.display = 'none'; }
 
     async function unblockUserFromList(targetCode) {
       if (!confirm('Unblock this user?')) return;
       await db.ref('blocked/' + currentUser.user_code + '/' + targetCode).remove();
       alert('User unblocked!');
-      
-      // Agar wo chat open hai toh turant refresh kardo
-      if (activeFriend && activeFriend.user_code === targetCode) {
-        isFriendBlockedByMe = false;
-        updateChatLockUI();
-        if(document.getElementById('friendProfileModal').style.display === 'flex') {
-           viewFriendProfile();
-        }
-      }
-      openBlockedUsersModal(); // List wapas refresh karega
-    }
-
-    /* ========================================================= */
-    /* BLOCKED USERS LIST SYSTEM                                 */
-    /* ========================================================= */
-    async function openBlockedUsersModal() {
-      document.getElementById('mainAppMenu').style.display = 'none';
-      const container = document.getElementById('blockedUsersList');
-      container.innerHTML = 'Loading...';
-      document.getElementById('blockedUsersModal').style.display = 'flex';
-
-      // Firebase se blocked list fetch karna
-      const snap = await db.ref('blocked/' + currentUser.user_code).once('value');
-      const blockedData = snap.val() || {};
-      const blockedCodes = Object.keys(blockedData).filter(code => blockedData[code] === true);
-      
-      if (blockedCodes.length === 0) {
-        container.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding: 20px;">No blocked users.</p>';
-        return;
-      }
-
-      container.innerHTML = '';
-      for (let code of blockedCodes) {
-        const uSnap = await db.ref('users/' + code).once('value');
-        const u = uSnap.val() || { username: 'Unknown User' };
-        
-        const row = document.createElement('div');
-        row.style = 'display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--glass-border);';
-        row.innerHTML = `
-          <div><strong>${escapeHtml(u.username)}</strong> <br> <small style="color: var(--text-muted);">Code: ${code}</small></div>
-          <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem; background: rgba(52, 199, 89, 0.2); color: #34c759; border: 1px solid rgba(52,199,89,0.3);" onclick="unblockUserFromList('${code}')">Unblock</button>
-        `;
-        container.appendChild(row);
-      }
-    }
-
-    function closeBlockedUsersModal() {
-      document.getElementById('blockedUsersModal').style.display = 'none';
-    }
-
-    async function unblockUserFromList(targetCode) {
-      if (!confirm('Unblock this user?')) return;
-      await db.ref('blocked/' + currentUser.user_code + '/' + targetCode).remove();
-      alert('User unblocked!');
-      
-      // Agar blocked user wahi active friend hai jiska chat open hai, toh live chat bhi unlock karo
-      if (activeFriend && activeFriend.user_code === targetCode) {
-        isFriendBlockedByMe = false;
-        updateChatLockUI();
-        viewFriendProfile(); // Live profile popup bhi refresh hoga
-      }
-      openBlockedUsersModal(); // List wapas refresh karega taaki user hat jaye
+      if (activeFriend && activeFriend.user_code === targetCode) { isFriendBlockedByMe = false; updateChatLockUI(); if(document.getElementById('friendProfileModal').style.display === 'flex') { viewFriendProfile(); } }
+      openBlockedUsersModal(); 
     }
 
     async function pinActiveMessage() { if (!selectedMsgId || !activeFriend) return; await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).set({ text: document.getElementById(`content_${selectedMsgId}`).innerText }); document.getElementById('waContextMenu').style.display = 'none'; }
     async function unpinMessage() { if (activeFriend) await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).remove(); }
-
-    async function editActiveMessage() {
-      if (!selectedMsgId || !activeFriend) return;
-      const t = prompt('Edit message:', document.getElementById(`content_${selectedMsgId}`).innerText);
-      if (t && t.trim()) { await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ message: t.trim(), edited: true }); }
-      document.getElementById('waContextMenu').style.display = 'none';
-    }
-
-    // Secure Delete for Everyone
+    async function editActiveMessage() { if (!selectedMsgId || !activeFriend) return; const t = prompt('Edit message:', document.getElementById(`content_${selectedMsgId}`).innerText); if (t && t.trim()) { await db.ref(`messages/${getChatId(currentUser.user_code, activeFriend.user_code)}/${selectedMsgId}`).update({ message: t.trim(), edited: true }); } document.getElementById('waContextMenu').style.display = 'none'; }
+    
     async function deleteActiveMessage() {
-      if (!selectedMsgId || !activeFriend) return;
-      const chatId = getChatId(currentUser.user_code, activeFriend.user_code); 
-      const snap = await db.ref(`messages/${chatId}/${selectedMsgId}`).once('value');
+      if (!selectedMsgId || !activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); const snap = await db.ref(`messages/${chatId}/${selectedMsgId}`).once('value');
       if (snap.exists()) {
-        if (String(snap.val().sender_code) === String(currentUser.user_code)) {
-          if (confirm('Delete this message for everyone?')) { 
-            await db.ref(`messages/${chatId}/${selectedMsgId}`).update({ deleted: true, message: '', image: null, audio: null, document: null, file_url: null, file_name: null }); 
-          }
-        } else { 
-          alert("You can only 'Delete for Everyone' on messages you sent. Use 'Delete for Me' instead."); 
-        }
-      }
-      document.getElementById('waContextMenu').style.display = 'none';
+        if (String(snap.val().sender_code) === String(currentUser.user_code)) { if (confirm('Delete this message for everyone?')) { await db.ref(`messages/${chatId}/${selectedMsgId}`).update({ deleted: true, message: '', image: null, audio: null, document: null, file_url: null, file_name: null }); } } 
+        else { alert("You can only 'Delete for Everyone' on messages you sent. Use 'Delete for Me' instead."); }
+      } document.getElementById('waContextMenu').style.display = 'none';
     }
 
     async function toggleStarActiveMessage() { if (!selectedMsgId || !activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); const starRef = db.ref(`messages/${chatId}/${selectedMsgId}/starredBy/${currentUser.user_code}`); const snap = await starRef.once('value'); if (snap.val()) await starRef.remove(); else await starRef.set(true); document.getElementById('waContextMenu').style.display = 'none'; }
@@ -2486,9 +2285,8 @@
 
     function openImageModal(src) { document.getElementById('imageModalImg').src = src; document.getElementById('imageModal').style.display = 'flex'; history.pushState({ modal: 'image' }, "", "#image"); }
     function closeImageModal(fromPopstate = false) { document.getElementById('imageModal').style.display = 'none'; if (!fromPopstate && history.state && history.state.modal === 'image') { history.back(); } }
-
     function handleTypingEvent() { if (!activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); db.ref('typing/' + chatId + '/' + currentUser.user_code).set(true); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false), 1500); }
-
+    
     async function handleSendMessage(event) {
       event.preventDefault(); const input = document.getElementById('chatMessageInput'); const text = input.value.trim();
       if (!text || !activeFriend) return; if (isFriendBlockedByMe || amIBlockedByFriend) return;
@@ -2506,9 +2304,4 @@
 
     // RUN ON LOAD
     checkSavedSession();
-
   </script>
-</body>
-</html>
-
-
