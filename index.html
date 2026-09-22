@@ -2212,33 +2212,91 @@ filterFriendsList();
       document.getElementById('friendProfileModal').style.display = 'flex';
     }
 
-    async function toggleBlockUser() {
-      if (!activeFriend || !currentUser) return; 
-      const ref = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
-      const snap = await ref.once('value');
-      
-      if (snap.val() === true) { 
-        await ref.remove(); 
-        isFriendBlockedByMe = false;
-        alert('User has been unblocked.'); 
-      } else { 
-        if (confirm(`Are you sure you want to block ${activeFriend.username}? They will not be able to message you.`)) { 
-          await ref.set(true); 
-          isFriendBlockedByMe = true;
-          alert('User blocked securely.'); 
-        } 
-      }
-      viewFriendProfile(); 
+
+async function unblockActiveFriend() {
+  if (!activeFriend || !currentUser) return;
+
+  try {
+    await db.ref(
+      'blocked/' +
+      currentUser.user_code +
+      '/' +
+      activeFriend.user_code
+    ).remove();
+
+    isFriendBlockedByMe = false;
+
+    updateChatLockUI();
+
+    if (
+      document.getElementById('friendProfileModal').style.display === 'flex'
+    ) {
+      viewFriendProfile();
+    }
+
+  } catch (err) {
+    console.error('Failed to unblock user:', err);
+    alert('Unable to unblock this user. Please try again.');
+  }
+}
+  
+   async function toggleBlockUser() {
+  if (!activeFriend || !currentUser) return;
+
+  const ref = db.ref(
+    'blocked/' +
+    currentUser.user_code +
+    '/' +
+    activeFriend.user_code
+  );
+
+  try {
+    const snap = await ref.once('value');
+    const alreadyBlocked = snap.val() === true;
+
+    if (alreadyBlocked) {
+      await ref.remove();
+
+      isFriendBlockedByMe = false;
+
       updateChatLockUI();
+      viewFriendProfile();
+
+      return;
     }
 
-    function updateChatLockUI() {
-      const inputBar = document.getElementById('chatInputBar'); const blockBanner = document.getElementById('blockWarningBanner');
-      if (isFriendBlockedByMe || amIBlockedByFriend) { inputBar.style.display = 'none'; blockBanner.style.display = 'block'; blockBanner.innerText = isFriendBlockedByMe ? "You blocked this contact. Tap to unblock." : "You cannot reply to this conversation."; } else { inputBar.style.display = 'flex'; blockBanner.style.display = 'none'; }
-    }
+    const confirmed = confirm(
+      `Block ${activeFriend.username}?\n\n` +
+      `They will not be able to message you until you unblock them.`
+    );
 
-    /* ========================================================= */
-    /* MULTI-SELECT SYSTEM                                       */
+    if (!confirmed) return;
+
+    await ref.set(true);
+
+    isFriendBlockedByMe = true;
+
+    // Stop typing immediately
+    const chatId = getChatId(
+      currentUser.user_code,
+      activeFriend.user_code
+    );
+
+    await db.ref(
+      'typing/' +
+      chatId +
+      '/' +
+      currentUser.user_code
+    ).set(false);
+
+    updateChatLockUI();
+    viewFriendProfile();
+
+  } catch (err) {
+    console.error('Block/unblock failed:', err);
+    alert('Unable to change block status. Please try again.');
+  }
+}                                     */
     /* ========================================================= */
     function enterSelectionMode() {
       isSelectionMode = true; selectedMessagesSet.clear(); document.getElementById('waContextMenu').style.display = 'none'; document.getElementById('selectionBar').classList.add('active'); toggleMessageSelection(selectedMsgId); document.querySelectorAll('.msg-checkbox').forEach(cb => cb.style.display = 'flex');
@@ -2279,7 +2337,14 @@ filterFriendsList();
     /* ========================================================= */
     function openChat(friend) {
       try {
-        activeFriend = friend; lastRenderedDate = ""; exitSelectionMode();
+       activeFriend = friend;
+lastRenderedDate = "";
+exitSelectionMode();
+
+// Reset previous conversation's block state
+// before Firebase loads the new conversation state.
+isFriendBlockedByMe = false;
+amIBlockedByFriend = false;
         document.getElementById('emojiPicker').classList.remove('active'); document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
         document.getElementById('chatPanel').classList.add('active'); history.pushState({ chatOpen: true }, "", "#chat");
         document.getElementById('emptyPlaceholder').style.display = 'none'; document.getElementById('chatHeader').style.display = 'flex'; document.getElementById('chatBody').style.display = 'flex'; document.getElementById('chatInputBar').style.display = 'flex'; document.getElementById('blockWarningBanner').style.display = 'none';
@@ -2529,12 +2594,56 @@ let chatListRenderTimer = null;
     function closeBlockedUsersModal() { document.getElementById('blockedUsersModal').style.display = 'none'; }
 
     async function unblockUserFromList(targetCode) {
-      if (!confirm('Unblock this user?')) return;
-      await db.ref('blocked/' + currentUser.user_code + '/' + targetCode).remove();
-      alert('User unblocked!');
-      if (activeFriend && activeFriend.user_code === targetCode) { isFriendBlockedByMe = false; updateChatLockUI(); if(document.getElementById('friendProfileModal').style.display === 'flex') { viewFriendProfile(); } }
-      openBlockedUsersModal(); 
+
+  if (!currentUser || !targetCode) return;
+
+  const confirmed = confirm(
+    'Unblock this user?'
+  );
+
+  if (!confirmed) return;
+
+  try {
+
+    await db.ref(
+      'blocked/' +
+      currentUser.user_code +
+      '/' +
+      targetCode
+    ).remove();
+
+    if (
+      activeFriend &&
+      String(activeFriend.user_code) === String(targetCode)
+    ) {
+
+      isFriendBlockedByMe = false;
+
+      updateChatLockUI();
+
+      if (
+        document.getElementById(
+          'friendProfileModal'
+        ).style.display === 'flex'
+      ) {
+        viewFriendProfile();
+      }
     }
+
+    await openBlockedUsersModal();
+
+  } catch (err) {
+
+    console.error(
+      'Failed to unblock user:',
+      err
+    );
+
+    alert(
+      'Unable to unblock this user. Please try again.'
+    );
+  }
+}
 
     async function pinActiveMessage() { if (!selectedMsgId || !activeFriend) return; await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).set({ text: document.getElementById(`content_${selectedMsgId}`).innerText }); document.getElementById('waContextMenu').style.display = 'none'; }
     async function unpinMessage() { if (activeFriend) await db.ref('pinned/' + getChatId(currentUser.user_code, activeFriend.user_code)).remove(); }
@@ -2555,9 +2664,19 @@ let chatListRenderTimer = null;
     function closeImageModal(fromPopstate = false) { document.getElementById('imageModal').style.display = 'none'; if (!fromPopstate && history.state && history.state.modal === 'image') { history.back(); } }
     function handleTypingEvent() { if (!activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); db.ref('typing/' + chatId + '/' + currentUser.user_code).set(true); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false), 1500); }
     
-    async function handleSendMessage(event) {
-      event.preventDefault(); const input = document.getElementById('chatMessageInput'); const text = input.value.trim();
-      if (!text || !activeFriend) return; if (isFriendBlockedByMe || amIBlockedByFriend) return;
+    event.preventDefault();
+
+if (!activeFriend) return;
+
+if (isFriendBlockedByMe || amIBlockedByFriend) {
+  updateChatLockUI();
+  return;
+}
+
+const input = document.getElementById('chatMessageInput');
+const text = input.value.trim();
+
+if (!text) return;
       const chatId = getChatId(currentUser.user_code, activeFriend.user_code); const ts = new Date().getTime(); input.value = '';
       reactionMode = false; document.getElementById('emojiPicker').classList.remove('active'); db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false);
       const payload = { sender_code: currentUser.user_code, message: text, timestamp: ts, status: 'sent' };
@@ -2566,10 +2685,113 @@ let chatListRenderTimer = null;
     }
 
     async function toggleVoiceRecording() {
-      const micBtn = document.getElementById('micBtn'); if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); micBtn.classList.remove('recording'); return; }
-      try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); audioChunks = []; mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data); mediaRecorder.onstop = async () => { const reader = new FileReader(); reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' })); reader.onloadend = async () => { playAudioTone('send'); await db.ref('messages/' + getChatId(currentUser.user_code, activeFriend.user_code)).push({ sender_code: currentUser.user_code, audio: reader.result, timestamp: new Date().getTime(), status: 'sent' }); }; }; mediaRecorder.start(); micBtn.classList.add('recording'); } catch (err) { alert('Microphone access denied or unsupported.'); }
+
+  if (!activeFriend) return;
+
+  if (isFriendBlockedByMe || amIBlockedByFriend) {
+    updateChatLockUI();
+    return;
+  }
+
+  const micBtn = document.getElementById('micBtn');
+
+  if (
+    mediaRecorder &&
+    mediaRecorder.state === 'recording'
+  ) {
+    mediaRecorder.stop();
+    micBtn.classList.remove('recording');
+    return;
+  }
+
+  try {
+
+    const stream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    // Check again after permission is granted.
+    // Block status could have changed while permission
+    // dialog was open.
+    if (isFriendBlockedByMe || amIBlockedByFriend) {
+      stream.getTracks().forEach(track => track.stop());
+      updateChatLockUI();
+      return;
     }
 
-    // RUN ON LOAD
+    mediaRecorder =
+      new MediaRecorder(stream);
+
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+
+      stream
+        .getTracks()
+        .forEach(track => track.stop());
+
+      if (
+        isFriendBlockedByMe ||
+        amIBlockedByFriend ||
+        !activeFriend
+      ) {
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.readAsDataURL(
+        new Blob(audioChunks, {
+          type: 'audio/webm'
+        })
+      );
+
+      reader.onloadend = async () => {
+
+        if (
+          isFriendBlockedByMe ||
+          amIBlockedByFriend ||
+          !activeFriend
+        ) {
+          return;
+        }
+
+        playAudioTone('send');
+
+        await db.ref(
+          'messages/' +
+          getChatId(
+            currentUser.user_code,
+            activeFriend.user_code
+          )
+        ).push({
+          sender_code: currentUser.user_code,
+          audio: reader.result,
+          timestamp: new Date().getTime(),
+          status: 'sent'
+        });
+      };
+    };
+
+    mediaRecorder.start();
+
+    micBtn.classList.add('recording');
+
+  } catch (err) {
+
+    console.error('Voice recording error:', err);
+
+    alert(
+      'Microphone access denied or unsupported.'
+    );
+  }
+}
     checkSavedSession();
   </script>
