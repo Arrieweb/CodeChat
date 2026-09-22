@@ -1833,71 +1833,214 @@
       bubbles.forEach(row => { row.classList.remove('search-match', 'search-dimmed'); if (!query) return; const contentDiv = row.querySelector('[id^="content_"]'); if (!contentDiv) return; if ((contentDiv.textContent || contentDiv.innerText).toLowerCase().includes(query)) { row.classList.add('search-match'); if (!firstMatch) firstMatch = row; } else { row.classList.add('search-dimmed'); } });
       if (firstMatch && query) { firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }
+function filterFriendsList() {
+  scheduleChatListRender();
+}
 
-    function filterFriendsList() { const query = document.getElementById('searchFriends').value.toLowerCase().trim(); if (!query) { renderFriendsUI(cachedFriends); return; } const filtered = cachedFriends.filter(f => (f.username && f.username.toLowerCase().includes(query)) || (f.user_code && String(f.user_code).includes(query))); renderFriendsUI(filtered); }
+    function getChatPreview(msg) {
+  if (!msg) return "Tap to chat";
+  if (msg.deleted) return "🚫 Message deleted";
+  if (msg.image) return "📷 Photo";
+  if (msg.document) return "📄 Document";
+  if (msg.audio) return "🎤 Voice Note";
+  return msg.message || "Tap to chat";
+}
 
-    function renderFriendsUI(friendsArray) {
-      const container = document.getElementById('friendsList');
-      if (friendsArray.length === 0) { container.innerHTML = `<div style="text-align: center; color: var(--text-muted); margin-top: 50px;">No chats found.</div>`; return; }
-      
-      container.innerHTML = '';
-      friendsArray.forEach(info => {
-        const code = info.user_code;
-        const item = document.createElement('div');
-        item.className = 'list-item' + (activeFriend && activeFriend.user_code === code ? ' selected' : '');
-        item.onclick = () => openChat({ user_code: code, username: info.username, photoUrl: info.photoUrl });
-        
-        item.innerHTML = `
-          <div style="display: flex; align-items: center; min-width: 0; width: 100%;">
-            <div class="avatar-wrapper">
-              <div class="avatar" id="avatar_${code}"></div>
-              <div class="online-badge" id="badge_${code}"></div>
-            </div>
-            <div class="item-meta">
-              <span class="title" style="display:flex; justify-content:space-between;">
-                ${escapeHtml(info.username)}
-                <span class="unread-badge" id="unread_${code}" style="display:none;">0</span>
-              </span>
-              <span class="subtitle" id="subtitle_${code}">Tap to chat</span>
-            </div>
-          </div>
-        `;
-        container.appendChild(item);
-        renderAvatar(document.getElementById(`avatar_${code}`), info.username, info.photoUrl);
-        
-        db.ref('status/' + code).on('value', (s) => { const b = document.getElementById(`badge_${code}`); if (b) b.classList.toggle('active', s.val() && s.val().state === 'online'); });
-        
-        const chatId = getChatId(currentUser.user_code, code);
-        db.ref('messages/' + chatId).on('value', (s) => {
-          const msgs = s.val() || {}; 
-          let unread = 0;
-          let lastMsgText = "Tap to chat";
-          let lastMsgTime = 0;
+function sortChatList(friendsArray) {
+  return [...friendsArray].sort((a, b) => {
+    const aMeta = chatMetaState[a.user_code] || {};
+    const bMeta = chatMetaState[b.user_code] || {};
 
-          for (let mId in msgs) {
-            const m = msgs[mId];
-            if (m.timestamp > lastMsgTime) {
-              lastMsgTime = m.timestamp;
-              if (m.deleted) lastMsgText = "🚫 Message deleted";
-              else if (m.image) lastMsgText = "📷 Photo";
-              else if (m.document) lastMsgText = "📄 Document";
-              else if (m.audio) lastMsgText = "🎤 Voice Note";
-              else lastMsgText = m.message;
-            }
-            if (m.sender_code === code) {
-              if (m.status !== 'seen') unread++;
-              if (m.status === 'sent') db.ref(`messages/${chatId}/${mId}`).update({ status: 'delivered' });
-            }
-          }
-          
-          const subtitleEl = document.getElementById(`subtitle_${code}`);
-          if (subtitleEl) subtitleEl.innerText = lastMsgText;
-
-          const badgeEl = document.getElementById(`unread_${code}`);
-          if (badgeEl) { badgeEl.innerText = unread; badgeEl.style.display = unread > 0 ? 'inline-block' : 'none'; }
-        });
-      });
+    // Pinned chats always stay above unpinned chats
+    if (aMeta.pinned !== bMeta.pinned) {
+      return aMeta.pinned ? -1 : 1;
     }
+
+    // Newest message first
+    const aTime = Number(aMeta.lastMessageTimestamp || 0);
+    const bTime = Number(bMeta.lastMessageTimestamp || 0);
+
+    if (aTime !== bTime) {
+      return bTime - aTime;
+    }
+
+    // Stable fallback: username
+    return String(a.username || '').localeCompare(String(b.username || ''));
+  });
+}
+
+function scheduleChatListRender() {
+  clearTimeout(chatListRenderTimer);
+
+  chatListRenderTimer = setTimeout(() => {
+    const searchInput = document.getElementById('searchFriends');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    let friendsToRender = cachedFriends || [];
+
+    if (query) {
+      friendsToRender = friendsToRender.filter(f =>
+        (f.username && f.username.toLowerCase().includes(query)) ||
+        (f.user_code && String(f.user_code).includes(query))
+      );
+    }
+
+    renderFriendsUI(friendsToRender);
+  }, 30);
+}
+
+function setupChatListListener(friend) {
+  if (!currentUser || !friend) return;
+
+  const code = friend.user_code;
+  const chatId = getChatId(currentUser.user_code, code);
+
+  // Do not create the same listeners repeatedly
+  if (chatListListeners[code]) return;
+
+  const chatRef = db.ref('messages/' + chatId);
+
+  chatListListeners[code] = chatRef.on('value', (snapshot) => {
+    const msgs = snapshot.val() || {};
+
+    let unread = 0;
+    let lastMsg = null;
+    let lastMsgTime = 0;
+
+    Object.keys(msgs).forEach(msgId => {
+      const m = msgs[msgId];
+      if (!m) return;
+
+      const msgTime = Number(m.timestamp || 0);
+
+      if (msgTime > lastMsgTime) {
+        lastMsgTime = msgTime;
+        lastMsg = m;
+      }
+
+      if (
+        String(m.sender_code) === String(code) &&
+        m.status !== 'seen' &&
+        !(m.deletedForMe && m.deletedForMe[currentUser.user_code])
+      ) {
+        unread++;
+
+        // Mark incoming messages as delivered
+        if (m.status === 'sent') {
+          db.ref(`messages/${chatId}/${msgId}`).update({
+            status: 'delivered'
+          });
+        }
+      }
+    });
+
+    chatMetaState[code] = {
+      ...(chatMetaState[code] || {}),
+      lastMessage: getChatPreview(lastMsg),
+      lastMessageTimestamp: lastMsgTime,
+      lastMessageSender: lastMsg ? lastMsg.sender_code : null,
+      unreadCount: unread
+    };
+
+    scheduleChatListRender();
+  });
+
+  // Online/offline listener — created only once per friend
+  if (!statusListeners[code]) {
+    const statusRef = db.ref('status/' + code);
+
+    statusListeners[code] = statusRef.on('value', (snapshot) => {
+      const badge = document.getElementById(`badge_${code}`);
+
+      if (badge) {
+        const status = snapshot.val();
+        badge.classList.toggle(
+          'active',
+          !!(status && status.state === 'online')
+        );
+      }
+    });
+  }
+}
+
+function renderFriendsUI(friendsArray) {
+  const container = document.getElementById('friendsList');
+
+  if (!container) return;
+
+  const sortedFriends = sortChatList(friendsArray || []);
+
+  if (sortedFriends.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; color:var(--text-muted); margin-top:50px;">
+        No chats found.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+
+  sortedFriends.forEach(info => {
+    const code = info.user_code;
+    const meta = chatMetaState[code] || {};
+
+    const item = document.createElement('div');
+
+    item.className =
+      'list-item' +
+      (activeFriend &&
+       String(activeFriend.user_code) === String(code)
+        ? ' selected'
+        : '');
+
+    item.onclick = () => openChat({
+      user_code: code,
+      username: info.username,
+      photoUrl: info.photoUrl
+    });
+
+    item.innerHTML = `
+      <div style="display:flex; align-items:center; min-width:0; width:100%;">
+        <div class="avatar-wrapper">
+          <div class="avatar" id="avatar_${code}"></div>
+          <div class="online-badge" id="badge_${code}"></div>
+        </div>
+
+        <div class="item-meta">
+          <span class="title" style="display:flex; justify-content:space-between; gap:8px;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${escapeHtml(info.username)}
+            </span>
+
+            <span
+              class="unread-badge"
+              id="unread_${code}"
+              style="${meta.unreadCount > 0 ? 'display:inline-block;' : 'display:none;'}"
+            >
+              ${meta.unreadCount || 0}
+            </span>
+          </span>
+
+          <span class="subtitle" id="subtitle_${code}">
+            ${escapeHtml(meta.lastMessage || 'Tap to chat')}
+          </span>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(item);
+
+    renderAvatar(
+      document.getElementById(`avatar_${code}`),
+      info.username,
+      info.photoUrl
+    );
+
+    // Listener is created only once.
+    setupChatListListener(info);
+  });
+}
 
     function listenToFriendsAndRequests() {
       db.ref('friends').on('value', async (snapshot) => {
@@ -1909,8 +2052,22 @@
         }
         document.getElementById('requestsDot').style.display = pending.length > 0 ? 'block' : 'none';
         const badgeUI = document.getElementById('reqBadgeUI'); if (badgeUI) { badgeUI.style.display = pending.length > 0 ? 'inline-block' : 'none'; badgeUI.innerText = pending.length; }
-        cachedFriends = []; for (let code of Array.from(friendCodes)) { const snap = await db.ref('users/' + code).get(); if (snap.exists()) cachedFriends.push(snap.val()); }
-        filterFriendsList();
+        cachedFriends = [];
+
+for (let code of Array.from(friendCodes)) {
+  const snap = await db.ref('users/' + code).get();
+
+  if (snap.exists()) {
+    cachedFriends.push(snap.val());
+  }
+}
+
+// Create listeners once for each friend
+cachedFriends.forEach(friend => {
+  setupChatListListener(friend);
+});
+
+filterFriendsList();
       });
     }
 
@@ -2185,7 +2342,16 @@
     function copyActiveMessage() { if (!selectedMsgId) return; const b = document.getElementById(`content_${selectedMsgId}`); if (b) { navigator.clipboard.writeText(b.innerText); alert("Copied!"); } document.getElementById('waContextMenu').style.display = 'none'; }
 
     // SEARCHABLE FORWARD SYSTEM
-    let currentForwardIsBulk = false;
+  
+    /* ========================================================= */
+/* CHAT LIST STATE                                           */
+/* ========================================================= */
+let chatMetaState = {};
+let chatListListeners = {};
+let statusListeners = {};
+let chatListRenderTimer = null;
+  
+  let currentForwardIsBulk = false;
     function openForwardModal(isBulk = false) {
       document.getElementById('waContextMenu').style.display = 'none'; 
       if (isBulk && selectedMessagesSet.size === 0) return;
