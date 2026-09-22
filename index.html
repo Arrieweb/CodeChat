@@ -2296,7 +2296,9 @@ async function unblockActiveFriend() {
     console.error('Block/unblock failed:', err);
     alert('Unable to change block status. Please try again.');
   }
-}                                     */
+}
+    /* ========================================================= */
+    /* MULTI-SELECT SYSTEM                                       */
     /* ========================================================= */
     function enterSelectionMode() {
       isSelectionMode = true; selectedMessagesSet.clear(); document.getElementById('waContextMenu').style.display = 'none'; document.getElementById('selectionBar').classList.add('active'); toggleMessageSelection(selectedMsgId); document.querySelectorAll('.msg-checkbox').forEach(cb => cb.style.display = 'flex');
@@ -2664,9 +2666,10 @@ let chatListRenderTimer = null;
     function closeImageModal(fromPopstate = false) { document.getElementById('imageModal').style.display = 'none'; if (!fromPopstate && history.state && history.state.modal === 'image') { history.back(); } }
     function handleTypingEvent() { if (!activeFriend) return; const chatId = getChatId(currentUser.user_code, activeFriend.user_code); db.ref('typing/' + chatId + '/' + currentUser.user_code).set(true); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => db.ref('typing/' + chatId + '/' + currentUser.user_code).set(false), 1500); }
     
-    event.preventDefault();
+    async function handleSendMessage(event) {
+      event.preventDefault();
 
-if (!activeFriend) return;
+      if (!activeFriend) return;
 
 if (isFriendBlockedByMe || amIBlockedByFriend) {
   updateChatLockUI();
