@@ -1198,6 +1198,50 @@
       flex-direction: column;
       gap: 14px;
     }
+  /* ========================================================= */
+    /* IG DM THEME OVERRIDES (New Colors & Bubbles)              */
+    /* ========================================================= */
+    :root {
+      --theme-gradient-start: #46255e;
+      --theme-gradient-end: #b84d8e;
+      --theme-gradient-angle: 135deg;
+      --sent-text-color: #ffffff;
+      --receiver-bubble-bg: #f6edf8;
+      --receiver-text-color: #24122e;
+    }
+
+    .bubble.outgoing {
+      background: linear-gradient(var(--theme-gradient-angle), var(--theme-gradient-start), var(--theme-gradient-end)) !important;
+      color: var(--sent-text-color) !important;
+      border-radius: 22px 22px 5px 22px;
+      box-shadow: 0 4px 14px rgba(184, 77, 142, 0.2);
+    }
+
+    .bubble.incoming {
+      background: var(--receiver-bubble-bg) !important;
+      color: var(--receiver-text-color) !important;
+      border-radius: 22px 22px 22px 5px;
+      border: none;
+    }
+
+    .ig-input-wrapper {
+      flex: 1;
+      display: flex;
+      background: var(--input-bg);
+      border-radius: 24px;
+      padding: 4px 14px;
+      align-items: center;
+    }
+
+    .ig-input-wrapper input {
+      background: transparent;
+      border: none;
+      padding: 8px 0;
+      width: 100%;
+      color: var(--text);
+      outline: none;
+      font-size: 0.92rem;
+    }
   </style>
 </head>
 <body>
@@ -1326,8 +1370,11 @@
           <button class="icon-btn" onclick="toggleChatSearch()" title="Search in Chat">
             <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </button>
+          <!-- Naya Theme Customizer Button -->
+          <button class="icon-btn" onclick="openThemeCustomizer()" title="Chat Theme">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+          </button>
         </div>
-      </div>
 
       <!-- In-Chat Search Bar -->
       <div class="chat-search-bar" id="chatSearchBar">
@@ -1383,40 +1430,38 @@
       </div>
 
       <!-- Chat Input Area -->
-      <form class="chat-input-bar" id="chatInputBar" style="display: none;" onsubmit="handleSendMessage(event)">
+      <form class="chat-input-bar" id="chatInputBar" style="display: none; align-items: center; gap: 8px;" onsubmit="handleSendMessage(event)">
         
-        <button type="button" class="input-action-btn" onclick="toggleAttachMenu()" title="Attach">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        <!-- Left Camera Icon -->
+        <button type="button" class="input-action-btn" style="background: #007aff; color: white; width: 32px; height: 32px;" onclick="document.getElementById('imageFileInput').click()" title="Camera">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
         </button>
-        
-        <div class="attach-menu" id="attachMenu">
-          <div class="attach-item" onclick="document.getElementById('imageFileInput').click()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            Photo/Video
-          </div>
-          <div class="attach-item" onclick="document.getElementById('docFileInput').click()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            Document (PDF/Zip)
-          </div>
-        </div>
 
+        <!-- Hidden files -->
         <input type="file" id="imageFileInput" accept="image/*,video/*" style="display:none;" onchange="handleFileSelected(event, 'media')" />
         <input type="file" id="docFileInput" accept=".pdf,.zip,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelected(event, 'document')" />
-        
-        <input type="text" id="chatMessageInput" placeholder="Message..." autocomplete="off" oninput="handleTypingEvent()" />
-        
-        <button type="button" class="input-action-btn" onclick="toggleEmojiPicker()" title="Emoji">
-          <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-        </button>
 
-        <button type="button" class="input-action-btn mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice Note">
-          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-        </button>
-
-        <button type="submit" class="input-action-btn send-btn" id="sendBtn">
-          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
-
+        <!-- IG Pill Input Wrapper -->
+        <div class="ig-input-wrapper">
+          <input type="text" id="chatMessageInput" placeholder="Message..." autocomplete="off" oninput="toggleIgSendButton()" />
+          
+          <div id="igRightIcons" style="display: flex; gap: 4px;">
+            <button type="button" class="input-action-btn mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="Voice Note">
+              <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            <button type="button" class="input-action-btn" onclick="document.getElementById('docFileInput').click()" title="Gallery/Doc">
+              <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            </button>
+            <button type="button" class="input-action-btn" onclick="toggleEmojiPicker()" title="Sticker">
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+            </button>
+          </div>
+          
+          <!-- Text Send Button -->
+          <button type="submit" class="input-action-btn send-btn" id="sendBtn" style="display: none; background: transparent; color: var(--theme-gradient-end); width: auto; min-width: auto; padding: 0 8px;">
+            <span style="font-weight: 700; font-size: 0.95rem;">Send</span>
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -1562,7 +1607,37 @@
       <button class="btn btn-secondary" onclick="closeRequestsModal()">Close</button>
     </div>
   </div>
+<!-- IG Theme Customizer Modal -->
+  <div class="dialog-overlay" id="themeCustomizerModal">
+    <div class="dialog-card">
+      <h3 style="font-size: 1.1rem; text-align: center;">Chat Theme</h3>
+      
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Quick Presets</label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button class="btn btn-secondary" onclick="applyPresetTheme('#46255e', '#b84d8e', '#f6edf8', '135deg')" style="font-size: 0.75rem;">Lavender Pink</button>
+        <button class="btn btn-secondary" onclick="applyPresetTheme('#ff7e5f', '#feb47b', '#fff0e6', '135deg')" style="font-size: 0.75rem;">Sunset Bloom</button>
+        <button class="btn btn-secondary" onclick="applyPresetTheme('#0f2027', '#203a43', '#eceff1', '135deg')" style="font-size: 0.75rem;">Midnight Neon</button>
+        <button class="btn btn-secondary" onclick="applyPresetTheme('#00c6ff', '#0072ff', '#e6f2ff', '135deg')" style="font-size: 0.75rem;">IG Classic</button>
+      </div>
 
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">Gradient Start & End</label>
+      <div style="display: flex; gap: 10px;">
+        <input type="color" id="gradStartInput" style="flex: 1; height: 40px; padding: 0;" oninput="updateCustomTheme()" />
+        <input type="color" id="gradEndInput" style="flex: 1; height: 40px; padding: 0;" oninput="updateCustomTheme()" />
+      </div>
+
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Gradient Angle (<span id="angleValue">135</span>°)</label>
+      <input type="range" id="angleSlider" min="0" max="360" value="135" oninput="updateCustomTheme()" style="width: 100%;" />
+
+      <label style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Receiver Bubble Background</label>
+      <input type="color" id="recvBubbleBgInput" style="width: 100%; height: 40px; padding: 0;" oninput="updateCustomTheme()" />
+
+      <div style="display: flex; gap: 8px; margin-top: 15px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="closeThemeCustomizer()">Save Theme</button>
+        <button class="btn btn-secondary" onclick="resetToDefaultTheme()">Reset</button>
+      </div>
+    </div>
+  </div>
 <!-- --- END OF BATCH 2 --- -->
 <!-- CONTEXT MENU (The Container that appears on Hold) -->
   <div class="wa-context-menu" id="waContextMenu">
@@ -2796,5 +2871,95 @@ if (!text) return;
     );
   }
 }
+  alert(
+        'Microphone access denied or unsupported.'
+      );
+    }
+  }
+
+    /* ========================================================= */
+    /* IG DM THEME ENGINE & INPUT LOGIC                          */
+    /* ========================================================= */
+
+    // Type karte waqt Send button dikhana
+    function toggleIgSendButton() {
+      handleTypingEvent(); 
+      const val = document.getElementById('chatMessageInput').value.trim();
+      if (val.length > 0) {
+        document.getElementById('igRightIcons').style.display = 'none';
+        document.getElementById('sendBtn').style.display = 'flex';
+      } else {
+        document.getElementById('igRightIcons').style.display = 'flex';
+        document.getElementById('sendBtn').style.display = 'none';
+      }
+    }
+
+    // Message bhejne ke baad wapas icons le aana (Safe Hook)
+    const originalSendHandler = handleSendMessage;
+    handleSendMessage = async function(event) {
+        await originalSendHandler(event);
+        toggleIgSendButton(); 
+    };
+
+    function openThemeCustomizer() {
+      document.getElementById('themeCustomizerModal').style.display = 'flex';
+    }
+
+    function closeThemeCustomizer() {
+      document.getElementById('themeCustomizerModal').style.display = 'none';
+      saveThemePreferences();
+    }
+
+    function updateCustomTheme() {
+      const start = document.getElementById('gradStartInput').value;
+      const end = document.getElementById('gradEndInput').value;
+      const angle = document.getElementById('angleSlider').value;
+      const recvBg = document.getElementById('recvBubbleBgInput').value;
+      
+      document.getElementById('angleValue').innerText = angle;
+      
+      document.documentElement.style.setProperty('--theme-gradient-start', start);
+      document.documentElement.style.setProperty('--theme-gradient-end', end);
+      document.documentElement.style.setProperty('--theme-gradient-angle', angle + 'deg');
+      document.documentElement.style.setProperty('--receiver-bubble-bg', recvBg);
+    }
+
+    function applyPresetTheme(start, end, recvBg, angleStr) {
+      document.getElementById('gradStartInput').value = start;
+      document.getElementById('gradEndInput').value = end;
+      document.getElementById('recvBubbleBgInput').value = recvBg;
+      document.getElementById('angleSlider').value = parseInt(angleStr);
+      updateCustomTheme();
+    }
+
+    function resetToDefaultTheme() {
+      applyPresetTheme('#46255e', '#b84d8e', '#f6edf8', '135deg');
+    }
+
+    function saveThemePreferences() {
+      const themeData = {
+        start: document.getElementById('gradStartInput').value,
+        end: document.getElementById('gradEndInput').value,
+        angle: document.getElementById('angleSlider').value,
+        recvBg: document.getElementById('recvBubbleBgInput').value
+      };
+      localStorage.setItem('iDirectTheme', JSON.stringify(themeData));
+    }
+
+    function loadThemePreferences() {
+      const saved = localStorage.getItem('iDirectTheme');
+      if (saved) {
+        const themeData = JSON.parse(saved);
+        applyPresetTheme(themeData.start, themeData.end, themeData.recvBg, themeData.angle + 'deg');
+      } else {
+        resetToDefaultTheme();
+      }
+    }
+
+    // Colors ko turant load karo app khulte hi
+    loadThemePreferences();
+
     checkSavedSession();
+  </script>  
+  checkSavedSession();
   </script>
