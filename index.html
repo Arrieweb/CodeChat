@@ -1535,7 +1535,7 @@
       <div id="fpInitials" class="avatar" style="width:150px; height:150px; font-size:4rem; margin:0 auto; display:flex;"></div>
       <h2 id="fpName" style="margin-top:10px; font-size:1.4rem;">Name</h2>
       <p id="fpCode" style="color:var(--text-muted); font-size:0.9rem;">Code: ---</p>
-      <button class="btn" id="blockUserBtn" style="width:100%; margin-top:15px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);" onclick="toggleBlockUser()">🚫 Block User</button>
+      <button class="btn" id="removeFriendBtn" style="width:100%; margin-top:15px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);" onclick="removeActiveFriend()">❌ Remove Friend</button> style="width:100%; margin-top:15px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);" onclick="toggleBlockUser()">🚫 Block User</button>
       <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="document.getElementById('friendProfileModal').style.display='none'">Close</button>
     </div>
   </div>
@@ -1810,11 +1810,15 @@
     }
     (function initTheme() { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark'); })();
 
-    function toggleMainMenu() { const menu = document.getElementById('mainAppMenu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; }
+    function toggleMainMenu() { 
+      const menu = document.getElementById('mainAppMenu'); 
+      menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; 
+    }
     document.addEventListener('click', (e) => { 
-      if (!e.target.closest('#mainAppMenu') && !e.target.closest('[title="Menu"]') && !e.target.closest('#mainMenuBtn')) { 
-        const m = document.getElementById('mainAppMenu'); if (m) m.style.display = 'none'; 
-      } 
+      // PC par menu ko immediately band hone se rokne ka fix
+      if (e.target.closest('#mainMenuBtn') || e.target.closest('[title="Menu"]')) return;
+      const m = document.getElementById('mainAppMenu'); 
+      if (m && !e.target.closest('#mainAppMenu')) m.style.display = 'none'; 
     });
 
     (function populateEmojis() { document.getElementById('emojiPicker').innerHTML = EMOJIS.map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join(''); })();
@@ -2316,63 +2320,35 @@ async function unblockActiveFriend() {
   }
 }
   
-   async function toggleBlockUser() {
-  if (!activeFriend || !currentUser) return;
-
-  const ref = db.ref(
-    'blocked/' +
-    currentUser.user_code +
-    '/' +
-    activeFriend.user_code
-  );
-
-  try {
-    const snap = await ref.once('value');
-    const alreadyBlocked = snap.val() === true;
-
-    if (alreadyBlocked) {
-      await ref.remove();
-
-      isFriendBlockedByMe = false;
-
-      updateChatLockUI();
-      viewFriendProfile();
-
-      return;
+   function viewFriendProfile() {
+      if (!activeFriend) return;
+      document.getElementById('fpName').innerText = activeFriend.username; 
+      document.getElementById('fpCode').innerText = "Code: " + activeFriend.user_code;
+      if (activeFriend.photoUrl) { 
+        document.getElementById('fpImage').src = activeFriend.photoUrl; 
+        document.getElementById('fpImage').style.display = 'block'; 
+        document.getElementById('fpInitials').style.display = 'none'; 
+      } else { 
+        document.getElementById('fpImage').style.display = 'none'; 
+        document.getElementById('fpInitials').style.display = 'flex'; 
+        document.getElementById('fpInitials').innerText = activeFriend.username.charAt(0).toUpperCase(); 
+      }
+      document.getElementById('friendProfileModal').style.display = 'flex';
     }
 
-    const confirmed = confirm(
-      `Block ${activeFriend.username}?\n\n` +
-      `They will not be able to message you until you unblock them.`
-    );
+    async function removeActiveFriend() {
+      if (!activeFriend || !currentUser) return;
+      const confirmed = confirm(`Are you sure you want to remove ${activeFriend.username} from your friends list?\n\nYou both will need to send a friend request to chat again.`);
+      if (!confirmed) return;
 
-    if (!confirmed) return;
-
-    await ref.set(true);
-
-    isFriendBlockedByMe = true;
-
-    // Stop typing immediately
-    const chatId = getChatId(
-      currentUser.user_code,
-      activeFriend.user_code
-    );
-
-    await db.ref(
-      'typing/' +
-      chatId +
-      '/' +
-      currentUser.user_code
-    ).set(false);
-
-    updateChatLockUI();
-    viewFriendProfile();
-
-  } catch (err) {
-    console.error('Block/unblock failed:', err);
-    alert('Unable to change block status. Please try again.');
-  }
-}
+      // Firebase se dono doston ki dosti hata dena (Unfriend)
+      const rel = getChatId(currentUser.user_code, activeFriend.user_code);
+      await db.ref('friends/' + rel).remove();
+      
+      alert('Friend removed successfully.');
+      document.getElementById('friendProfileModal').style.display = 'none';
+      closeChatMobile(); // Chat band karke wapas home screen par bhej dega
+    }
     /* ========================================================= */
     /* MULTI-SELECT SYSTEM                                       */
     /* ========================================================= */
@@ -2413,32 +2389,28 @@ async function unblockActiveFriend() {
     /* ========================================================= */
     /* MAIN CHAT WINDOW & BUBBLE RENDERING                       */
     /* ========================================================= */
+    let activeThemeListener = null;
+
     function openChat(friend) {
       try {
-       activeFriend = friend;
-lastRenderedDate = "";
-exitSelectionMode();
-
-// Reset previous conversation's block state
-// before Firebase loads the new conversation state.
-isFriendBlockedByMe = false;
-amIBlockedByFriend = false;
+        activeFriend = friend; lastRenderedDate = ""; exitSelectionMode();
         document.getElementById('emojiPicker').classList.remove('active'); document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
         document.getElementById('chatPanel').classList.add('active'); history.pushState({ chatOpen: true }, "", "#chat");
-        document.getElementById('emptyPlaceholder').style.display = 'none'; document.getElementById('chatHeader').style.display = 'flex'; document.getElementById('chatBody').style.display = 'flex'; document.getElementById('chatInputBar').style.display = 'flex'; document.getElementById('blockWarningBanner').style.display = 'none';
+        document.getElementById('emptyPlaceholder').style.display = 'none'; document.getElementById('chatHeader').style.display = 'flex'; document.getElementById('chatBody').style.display = 'flex'; document.getElementById('chatInputBar').style.display = 'flex'; 
+        document.getElementById('blockWarningBanner').style.display = 'none';
         document.getElementById('chatPartnerName').innerText = friend.username; renderAvatar(document.getElementById('chatPartnerAvatar'), friend.username, friend.photoUrl);
         const chatBody = document.getElementById('chatBody'); chatBody.innerHTML = '';
+        
         if (activeChatListener) activeChatListener.off(); 
+        if (activeThemeListener) activeThemeListener.off(); // Purani theme background checking band karo
+
         const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
         
-        if (window.myBlockRef) window.myBlockRef.off();
-        if (window.theirBlockRef) window.theirBlockRef.off();
-        
-        window.myBlockRef = db.ref('blocked/' + currentUser.user_code + '/' + activeFriend.user_code);
-        window.theirBlockRef = db.ref('blocked/' + activeFriend.user_code + '/' + currentUser.user_code);
-        
-        window.myBlockRef.on('value', snap => { isFriendBlockedByMe = snap.val() === true; updateChatLockUI(); });
-        window.theirBlockRef.on('value', snap => { amIBlockedByFriend = snap.val() === true; updateChatLockUI(); });
+        // 🎨 LIVE THEME SYNC: Cloud se is specific chat ki theme fetch karega
+        activeThemeListener = db.ref('chatThemes/' + chatId);
+        activeThemeListener.on('value', (snap) => {
+          applyFetchedTheme(snap.val());
+        });
 
         const chatRef = db.ref('messages/' + chatId); let isInitialLoad = true; activeChatListener = chatRef;
         activeChatListener.on('child_added', (snapshot) => {
@@ -2458,9 +2430,15 @@ amIBlockedByFriend = false;
       } catch(e) { console.error("Error in openChat: ", e); }
     }
 
-    function closeChatMobile(e, fromPopstate = false) { if (e) e.stopPropagation(); activeFriend = null; if (activeChatListener) activeChatListener.off(); document.getElementById('chatPanel').classList.remove('active'); if (!fromPopstate) history.back(); }
-    function parseFormattedText(text) { let escaped = escapeHtml(text); escaped = escaped.replace(/\*(.*?)\*/g, '<strong>$1</strong>'); escaped = escaped.replace(/_(.*?)_/g, '<em>$1</em>'); return escaped; }
-
+    function closeChatMobile(e, fromPopstate = false) { 
+      if (e) e.stopPropagation(); 
+      activeFriend = null; 
+      if (activeChatListener) activeChatListener.off(); 
+      if (activeThemeListener) activeThemeListener.off(); // Bahar aate hi theme fetching band
+      resetToDefaultTheme(); // Chat se bahar aate hi app ka default color wapas aa jayega
+      document.getElementById('chatPanel').classList.remove('active'); 
+      if (!fromPopstate) history.back(); 
+    }
     function handleFileSelected(event, fileType) {
       const attachMenu = document.getElementById('attachMenu'); if (attachMenu) attachMenu.classList.remove('active'); const file = event.target.files[0]; if (!file || !activeFriend) return;
       const pb = document.getElementById('uploadProgressBar'); const pc = document.getElementById('uploadProgressContainer'); const sb = document.getElementById('sendBtn');
@@ -2930,27 +2908,36 @@ if (!text) return;
     }
 
     function saveThemePreferences() {
+      if (!activeFriend || !currentUser) return;
+      const chatId = getChatId(currentUser.user_code, activeFriend.user_code);
+      
       const themeData = {
         start: document.getElementById('gradStartInput').value,
         end: document.getElementById('gradEndInput').value,
         angle: document.getElementById('angleSlider').value,
         recvBg: document.getElementById('recvBubbleBgInput').value
       };
-      localStorage.setItem('iDirectTheme', JSON.stringify(themeData));
+      
+      // Theme data direct is specific chat me save hoga, dono side update hoga!
+      db.ref('chatThemes/' + chatId).set(themeData);
     }
 
-    function loadThemePreferences() {
-      const saved = localStorage.getItem('iDirectTheme');
-      if (saved) {
-        const themeData = JSON.parse(saved);
-        applyPresetTheme(themeData.start, themeData.end, themeData.recvBg, themeData.angle + 'deg');
+    // Yeh function Firebase se data milne par automatic call hota hai
+    function applyFetchedTheme(themeData) {
+      if (themeData) {
+        document.getElementById('gradStartInput').value = themeData.start;
+        document.getElementById('gradEndInput').value = themeData.end;
+        document.getElementById('recvBubbleBgInput').value = themeData.recvBg;
+        document.getElementById('angleSlider').value = parseInt(themeData.angle);
+        
+        document.documentElement.style.setProperty('--theme-gradient-start', themeData.start);
+        document.documentElement.style.setProperty('--theme-gradient-end', themeData.end);
+        document.documentElement.style.setProperty('--theme-gradient-angle', themeData.angle + 'deg');
+        document.documentElement.style.setProperty('--receiver-bubble-bg', themeData.recvBg);
       } else {
-        resetToDefaultTheme();
+        resetToDefaultTheme(); // Agar is chat ki koi theme set nahi hai, toh default lagao
       }
     }
-
-    // Colors ko turant load karo app khulte hi
-    loadThemePreferences();
     checkSavedSession();
   </script>
 </body>
